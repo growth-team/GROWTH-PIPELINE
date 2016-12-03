@@ -1,6 +1,9 @@
 #!/usr/local/bin/ruby
 # coding: utf-8
-# growth-fy2015 pipline level-1 Ver 2.0
+# growth-fy2015 pipeline level-1 Ver 2.0
+# Created and maintained by Yuuki Wada
+# Created on 20161203
+
 require "json"
 require "shellwords"
 require "RubyFits"
@@ -12,9 +15,11 @@ fitsIndex=ARGV[0]
 caldbFile=ARGV[1]
 
 if (ARGV[1]==nil) then
-  puts "Usage: ruby growth-fy2015_pipeline_lv0.fits <fits index> <caldb file>"
+  puts "Usage: ruby growth-fy2015_pipeline_lv_1_ver2.rb <fits index> <caldb file>"
   exit 1
 end
+
+pipeline_version="Version 2"
 
 date=Time.now.strftime("%Y%m%d_%H%M%S")
 
@@ -23,6 +28,11 @@ errorFitsList="#{fitsIndex}_work/errorFitsList_#{date}.dat"
 workFolder="#{fitsIndex}_work"
 fitsFolderLv0="#{fitsIndex}_fits_lv0"
 fitsFolderLv1="#{fitsIndex}_fits_lv1"
+
+if File.exists?(fitsFolderLv0)==false then
+  puts "fits files do not exist"
+  exit 1
+end
 
 if File.exists?(workFolder)==false then
   `mkdir #{workFolder}`
@@ -44,6 +54,14 @@ for i in 0..5
   caldb_key[i]=(caldb[i].keys)
   caldb_value[i]=(caldb[i].values)
 end
+
+caldb_comment=Array.new
+caldb_comment[0]="detector ID"
+caldb_comment[1]="observation site"
+caldb_comment[2]="scintillator ID of Channel 0"
+caldb_comment[3]="scintillator ID of Channel 1"
+caldb_comment[4]="installation date"
+caldb_comment[5]="removal date"
 
 errorList=File.open(errorFitsList, "a")
 fitsList=File.open(tempFitsList, "r")
@@ -92,7 +110,7 @@ fitsFile.each do |fitsName|
             eventHDU=fits.hdu("EVENTS")
             eventHDU.setHeader("PIPELINE", "level-1")
             eventHDU.setHeader("PL1_DATE", "#{date}")
-            eventHDU.setHeader("PL1_VER", "2.0")
+            eventHDU.setHeader("PL1_VER", "#{pipeline_version}")
             for i in 0..5
               fits_key=caldb_key[i].join("")
               fits_value=caldb_value[i].join("")
@@ -106,13 +124,14 @@ fitsFile.each do |fitsName|
         newFitsAddress="#{fitsFolderLv1}/#{fitsName}"
         fits=FitsFile.new(fitsAddress)
         eventHDU=fits.hdu("EVENTS")
-        eventHDU.setHeader("PIPELINE", "level-1")
-        eventHDU.setHeader("PL1_DATE", "#{date}")
-        eventHDU.setHeader("PL1_VER", "2.0")
+        eventHDU.addHeader("PIPELINE", "level-1", "present pipeline process level")
+        eventHDU.addHeader("PL1_DATE", "#{date}", "pipeline level-1 processing date")
+        eventHDU.addHeader("PL1_VER", "#{pipeline_version}", "pipeline level-1 version")
         for i in 0..5
           fits_key=caldb_key[i].join("")
           fits_value=caldb_value[i].join("")
-          eventHDU.setHeader(fits_key, fits_value)
+          fits_comment=caldb_comment[i].join("")
+          eventHDU.addHeader(fits_key, fits_value, fits_comment)
         end
         fits.saveAs(newFitsAddress)
       end
