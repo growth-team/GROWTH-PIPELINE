@@ -5,8 +5,8 @@ include Math
 include Root
 include RootApp
 
-if ARGV[6]==nil then
-  puts "Usage: ruby scanEventSignificance.rb <fits file list> <adc channel> <bin size (sec)> <lower energy> <upper energy> <bgd mean> <bgd sigma> <output file>"
+if ARGV[7]==nil then
+  puts "Usage: ruby scanEventSignificance.rb <fits file list> <adc channel> <bin size (sec)> <lower energy> <upper energy> <bgd mean> <bgd sigma> <output directory>"
   exit 1
 end
 
@@ -17,14 +17,10 @@ energyLimitsLow=ARGV[3].to_f
 energyLimitsHigh=ARGV[4].to_f
 bgdMean=ARGV[5].to_f
 bgdSigma=ARGV[6].to_f
+outputDir=ARGV[7]
 
-outputAll=File.open("scanResult_all_significance.dat", "w")
-outputSig=File.open("scanResult_high_significance.dat", "w")
-
-
-  end
-end
-run_app()
+outputAll=File.open("#{outputDir}/scanResult_all_significance.dat", "w")
+outputSig=File.open("#{outputDir}/scanResult_high_significance.dat", "w")
 
 fitsList=File.open(fitsListAddress, "r")
 fitsFile=fitsList.readlines
