@@ -1,3 +1,4 @@
+#!/usr/local/bin/ruby
 require "RubyFits"
 require "RubyROOT"
 include Math
@@ -39,20 +40,20 @@ fitsFile.each_with_index do |fitsName, index|
     eventHDU=fits["EVENTS"]
     adcIndex=eventHDU["boardIndexAndChannel"]
     eventNum=eventHDU.getNRows()-1
-    unixTimeStart=eventHDU["UNIXTIME"][0].to_f
-    unixTimeLast=eventHDU["UNIXTIME"][eventNum].to_f
+    unixTimeStart=eventHDU["unixTime"][0].to_f
+    unixTimeLast=eventHDU["unixTime"][eventNum].to_f
+    energyWidth_header="BINW_CH#{adcChannel}"
+    energyWidth=eventHDU.header(energyWidth_header).to_f
     if index==0 then
       @unixTimeAllStart=unixTimeStart
     end
     startSecond[index]=unixTimeStart-@unixTimeAllStart
     lastSecond[index]=unixTimeLast-@unixTimeAllStart
     for i in 0..eventNum
-      unixTime=eventHDU["UNIXTIME"][i].to_f
-      energyRaw=eventHDU["ENERGY"][i].to_f
-      energyRawLow=eventHDU["ENERGY_LOW"][i].to_f
-      energyRawHigh=eventHDU["ENERGY_HIGH"][i].to_f
+      unixTime=eventHDU["unixTime"][i].to_f
+      energyRaw=eventHDU["energy"][i].to_f
       if adcIndex[i].to_i==adcChannel then
-        energy=energyRaw+(rand(-5..5).to_f/5.0)*(energyRawHigh-energyRaw)
+        energy=(energyRaw+(rand(-5..5).to_f/10.0)*energyWidth)/1000.0
         if (energy>=energyLimitsLow)&&(energy<energyLimitsHigh) then
           second=startSecond[index]+(unixTime-unixTimeStart.to_f)
           binNo=(second/binWidth).to_i
@@ -81,10 +82,10 @@ liveTime[binNum]=lastSecond[fitsFileNum-1]-binWidth*(((lastSecond[fitsFileNum-1]
 
 for i in 0..binNum
   errorCount[i]=count[i]**0.5
-  #  countSec[i]=count[i]/liveTime[i]
-  #  errorCountSec[i]=errorCount[i]/liveTime[i]
-  countSec[i]=count[i]/binWidth
-  errorCountSec[i]=errorCount[i]/binWidth
+  countSec[i]=count[i]/liveTime[i]
+  errorCountSec[i]=errorCount[i]/liveTime[i]
+  #countSec[i]=count[i]/binWidth
+  #errorCountSec[i]=errorCount[i]/binWidth
   time[i]=(i+0.5)*binWidth/60.0
   errorTime[i]=0.5*binWidth/60.0
 end

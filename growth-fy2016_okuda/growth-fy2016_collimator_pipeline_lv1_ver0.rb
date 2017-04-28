@@ -1,8 +1,8 @@
 #!/usr/local/bin/ruby
 # coding: utf-8
-# growth-fy2015 pipeline level-1 Ver 2.0
+# growth-fy2016 pipeline level-1 Ver 0.0
 # Created and maintained by Yuuki Wada
-# Created on 20161203
+# Created on 20161213
 
 require "json"
 require "shellwords"
@@ -13,21 +13,21 @@ include Fits
 
 puts ""
 puts "  #######################################"
-puts "  ## GROWTH-PIPELINE for growth-fy2015 ##"
-puts "  ##  Level-1 FITS Process  Version 2  ##"
-puts "  ##        December 4th, 2016         ##"
+puts "  ## GROWTH-PIPELINE for growth-fy2016 ##"
+puts "  ##  Level-1 FITS Process  Version 0  ##"
+puts "  ##        December 13th, 2016        ##"
 puts "  ## Yuuki Wada  (University of Tokyo) ##"
 puts "  #######################################"
 puts ""
 
 if (ARGV[1]==nil) then
-  puts "Usage: ruby growth-fy2015_pipeline_lv_1_ver2.rb <fits index> <caldb file>"
+  puts "Usage: ruby growth-fy2016_pipeline_lv1_ver0.rb <fits index> <caldb file>"
   puts ""
   exit 1
 end
 
-pipeline_version="Version 2"
-pipeline_version_short="ver2"
+pipeline_version="growth-fy2016 Collimator Version 0"
+pipeline_version_short="collimator_ver0"
 
 fitsIndex=ARGV[0]
 caldbFile=ARGV[1]
@@ -60,7 +60,7 @@ caldb=jsonLoad["detectorInfo"]
 caldb_key=Array.new
 caldb_value=Array.new
 
-for i in 0..5
+for i in 0..7
   caldb_key[i]=(caldb[i].keys)
   caldb_value[i]=(caldb[i].values)
 end
@@ -70,8 +70,10 @@ caldb_comment[0]="detector ID"
 caldb_comment[1]="observation site"
 caldb_comment[2]="scintillator ID of Channel 0"
 caldb_comment[3]="scintillator ID of Channel 1"
-caldb_comment[4]="installation date"
-caldb_comment[5]="removal date"
+caldb_comment[4]="scintillator ID of Channel 2"
+caldb_comment[5]="scintillator ID of Channel 3"
+caldb_comment[6]="installation date"
+caldb_comment[7]="removal date"
 
 errorList=File.open(errorFitsList, "a")
 fitsList=File.open(tempFitsList, "r")
@@ -121,7 +123,7 @@ fitsFile.each do |fitsName|
             eventHDU.setHeader("PIPELINE", "level-1")
             eventHDU.setHeader("PL1_DATE", "#{date}")
             eventHDU.setHeader("PL1_VER", "#{pipeline_version}")
-            for i in 0..5
+            for i in 0..7
               fits_key=caldb_key[i].join("")
               fits_value=caldb_value[i].join("")
               fits_comment=caldb_comment[i]

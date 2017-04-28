@@ -7,19 +7,20 @@ include Root
 include RootApp
 
 if (ARGV[1]==nil) then
-  puts "Usage: ruby makeSpectrum.rb <input file> <channel>"
+  puts "Usage: ruby makeSpectrum.rb <input file> <channel> <rebin>"
   exit 1
 end
   
 fitsFile=ARGV[0]
 adcChannel=ARGV[1].to_i
+rebin=ARGV[2].to_i
 fits=Fits::FitsFile.new(fitsFile)
 eventHDU=fits["EVENTS"]
 adcIndex=eventHDU["boardIndexAndChannel"]
 eventNum=eventHDU.getNRows()
-puts eventNum
 
-hist=Root::TH1F.create("hist", "hist", 1024, 0, 1023)
+binNum=1024/rebin
+hist=Root::TH1F.create("hist", "hist", binNum, -0.5, 1023.5)
 
 for i in 0..(eventNum.to_i-1)
   if adcIndex[i].to_i==adcChannel then
@@ -34,9 +35,9 @@ hist.GetXaxis.CenterTitle
 hist.GetYaxis.SetTitle("Count")
 hist.GetYaxis.CenterTitle
 hist.GetYaxis.SetTitleOffset(1.35)
-hist.GetYaxis.SetRangeUser(0.5, 100000)
+#hist.GetYaxis.SetRangeUser(0.5, 100000)
 hist.GetXaxis.SetRangeUser(512, 1024)
-hist.Draw("pl")
+hist.Draw()
 c0.SetLogy()
 c0.Update
 run_app()

@@ -1,8 +1,8 @@
 #!/usr/local/bin/ruby
 # coding: utf-8
-# growth-fy2015 pipeline level-1 Ver 2.0
+# growth-fy2016 pipeline level-1 Ver 0.0
 # Created and maintained by Yuuki Wada
-# Created on 20161203
+# Created on 20161213
 
 require "json"
 require "shellwords"
@@ -13,21 +13,21 @@ include Fits
 
 puts ""
 puts "  #######################################"
-puts "  ## GROWTH-PIPELINE for growth-fy2015 ##"
-puts "  ##  Level-1 FITS Process  Version 2  ##"
-puts "  ##        December 4th, 2016         ##"
+puts "  ## GROWTH-PIPELINE for growth-fy2016 ##"
+puts "  ##  Level-1 FITS Process  Version 0  ##"
+puts "  ##        December 13th, 2016        ##"
 puts "  ## Yuuki Wada  (University of Tokyo) ##"
 puts "  #######################################"
 puts ""
 
 if (ARGV[1]==nil) then
-  puts "Usage: ruby growth-fy2015_pipeline_lv_1_ver2.rb <fits index> <caldb file>"
+  puts "Usage: ruby growth-fy2016_pipeline_lv1_ver0.rb <fits index> <caldb file>"
   puts ""
   exit 1
 end
 
-pipeline_version="Version 2"
-pipeline_version_short="ver2"
+pipeline_version="growth-fy2016 Version 0"
+pipeline_version_short="ver0"
 
 fitsIndex=ARGV[0]
 caldbFile=ARGV[1]

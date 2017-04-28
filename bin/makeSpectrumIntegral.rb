@@ -1,3 +1,4 @@
+#!/usr/local/bin/ruby
 # coding: utf-8
 require "RubyFits"
 require "RubyROOT"
@@ -11,8 +12,8 @@ if (ARGV[1]==nil) then
 end
 
 energyMax=10.0
-energyMin=1.0
-binNum=500
+energyMin=0.0
+binNum=1000
 
 fitsFileList=ARGV[0]
 adcChannel=ARGV[1].to_i
@@ -28,16 +29,18 @@ fitsList.each_line do |fitsFile|
   eventHDU=fits["EVENTS"]
   eventNum=eventHDU.getNRows()-1
   adcIndex=eventHDU["boardIndexAndChannel"]
-  energyRaw=eventHDU["ENERGY"]
-  energyRawLow=eventHDU["ENERGY_LOW"]
-  energyRawHigh=eventHDU["ENERGY_HIGH"]
-  unixTimeStart=eventHDU["UNIXTIME"][0].to_f
-  unixTimeLast=eventHDU["UNIXTIME"][eventNum].to_f
+  energyRaw=eventHDU["energy"]
+  unixTimeStart=eventHDU["unixTime"][0].to_f
+  unixTimeLast=eventHDU["unixTime"][eventNum].to_f
   observationTime+=unixTimeLast-unixTimeStart
+  energyWidth_header="BINW_CH#{adcChannel}"
+  lowEnergy_header="ETH_CH#{adcChannel}"
+  energyWidth=eventHDU.header(energyWidth_header).to_f/1000.0
+  lowEnergy=eventHDU.header(lowEnergy_header).to_f/1000.0
   for i in 0..eventNum
     if adcIndex[i].to_i==adcChannel then
-      energy=(energyRaw[i].to_f+(rand(-5..5).to_f/5.0)*(energyRawHigh[i].to_f-energyRaw[i].to_f))/1000.0
-      if (energy>=1.0)&&(energy<=10.0) then
+      energy=(energyRaw[i].to_f+(rand(-5..5).to_f/10.0)*energyWidth)/1000.0
+      if (energy>=lowEnergy)&&(energy<=energyMax) then
         hist.Fill(energy)
       end
     end
