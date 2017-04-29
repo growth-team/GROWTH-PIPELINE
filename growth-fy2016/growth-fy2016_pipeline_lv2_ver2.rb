@@ -67,8 +67,13 @@ fitData.each_line do |fitDataLine|
   line=fitDataLine.split("\t")
   fitsFile=line[0]
   fitsFileParse=fitsFile.split("/")
-  puts fitsFileParse[3]
-  newFitsFile="#{fitsFolderLv2}/#{fitsFileParse[3]}"
+  if fitsFileParse=="." then
+    puts fitsFileParse[3]
+    newFitsFile="#{fitsFolderLv2}/#{fitsFileParse[3]}"
+  else
+    puts fitsFileParse[1]
+    newFitsFile="#{fitsFolderLv2}/#{fitsFileParse[1]}"
+  end
   peak_K=line[3]
   peak_Tl=line[5]
   bin_width=(energy_Tl-energy_K)/(line[5].to_f-line[3].to_f)
