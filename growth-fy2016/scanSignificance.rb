@@ -6,7 +6,7 @@ include Root
 include RootApp
 
 if ARGV[7]==nil then
-  puts "Usage: ruby scanEventSignificance.rb <fits file list> <adc channel> <bin size (sec)> <lower energy> <upper energy> <bgd mean> <bgd sigma> <output directory>"
+  puts "Usage: ruby scanSignificance.rb <fits file list> <adc channel> <bin size (sec)> <lower energy> <upper energy> <bgd mean> <bgd sigma> <output directory>"
   exit 1
 end
 

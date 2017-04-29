@@ -20,7 +20,7 @@ energyLimitsHigh=ARGV[5].to_f
 outputDir=ARGV[6]
 
 if File.exists?(outputDir)==false then
-  `mkdir #{outputDir}`
+  `mkdir -p #{outputDir}`
 end
 
 startDateObject=Date.strptime(startDate, "%Y%m%d")
