@@ -35,6 +35,7 @@ while 1==1 do
   fitsList=File.open(fitsListAddress, "r")
   fitsFile=fitsList.readlines
   fitsFileNum=fitsFile.length-1
+  puts fitsFileNum
   
   fitsFirst=Fits::FitsFile.new(fitsFile[0].chomp!)
   startUnixTime=fitsFirst["EVENTS"]["unixTime"][0].to_f
