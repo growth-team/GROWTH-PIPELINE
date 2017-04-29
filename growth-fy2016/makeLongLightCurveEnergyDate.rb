@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 require "RubyFits"
 require "RubyROOT"
 require "date"
@@ -18,6 +18,10 @@ binWidth=ARGV[3].to_f
 energyLimitsLow=ARGV[4].to_f
 energyLimitsHigh=ARGV[5].to_f
 outputDir=ARGV[6]
+
+if File.exists?(outputDir)==false then
+  `mkdir #{outputDir}`
+end
 
 startDateObject=Date.strptime(startDate, "%Y%m%d")
 index=0
