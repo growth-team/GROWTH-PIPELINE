@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
-# growth-fy2016 pipeline level-2 Version 0
+# growth-fy2016 pipeline level-2 Version 1
 # Created and maintained by Yuuki Wada
-# Created on 20161213
+# Created on 20170322
 
 require "json"
 require "shellwords"
@@ -12,20 +12,20 @@ include Fits
 puts ""
 puts "  #######################################"
 puts "  ## GROWTH-PIPELINE for growth-fy2016 ##"
-puts "  ##  Level-2 FITS Process  Version 0  ##"
-puts "  ##        December 13th, 2016        ##"
+puts "  ##  Level-2 FITS Process  Version 2  ##"
+puts "  ##          April 23rd, 2017         ##"
 puts "  ## Yuuki Wada  (University of Tokyo) ##"
 puts "  #######################################"
 puts ""
 
 if (ARGV[1]==nil) then
-  puts "Usage: ruby growth-fy2016_pipeline_lv2_ver0.rb <data index> <peak data> <calibrated channel> <threshold>"
+  puts "Usage: ruby growth-fy2016_pipeline_lv2_ver2.rb <data index> <peak data> <calibrated channel> <threshold>"
   puts ""
   exit 1
 end
 
-pipeline_version="growth-fy2016 Version 0"
-pipeline_version_short="ver0"
+pipeline_version="growth-fy2016 Version 2"
+pipeline_version_short="ver2"
 
 fitsIndex=ARGV[0]
 peakFitData=ARGV[1]
@@ -64,11 +64,11 @@ end
 fitData=File.open(peakFitData, "r")
 fitData.each_line do |fitDataLine|
   fitDataLine.chomp!
-  line=fitDataLine.split"\t"
+  line=fitDataLine.split("\t")
   fitsFile=line[0]
   fitsFileParse=fitsFile.split("/")
-  puts fitsFileParse[1]
-  newFitsFile="#{fitsFolderLv2}/#{fitsFileParse[1]}"
+  puts fitsFileParse[3]
+  newFitsFile="#{fitsFolderLv2}/#{fitsFileParse[3]}"
   peak_K=line[3]
   peak_Tl=line[5]
   bin_width=(energy_Tl-energy_K)/(line[5].to_f-line[3].to_f)
@@ -87,15 +87,21 @@ fitData.each_line do |fitDataLine|
   unixTimeJst=Time.at(unixTime[0]).strftime("%Y%m%d%H%M%S")
   gpsVerification=1
   if gpsTime[0..3]!="GP80" then
-    for i in 0..10
-      unixTimeUtc=Time.at(unixTime[0]-60.0*60.0*9.0-i.to_f+5.0).strftime("%H%M%S")
+    for i in 0..100
+      unixTimeUtc=Time.at(unixTime[0]-60.0*60.0*9.0-i.to_f+50.0).strftime("%H%M%S")
       if gpsTimeStart[8..13]==unixTimeUtc then
-        unixTimeJst=Time.at(unixTime[0]-i.to_f+5.0)
+        unixTimeJst=Time.at(unixTime[0]-i.to_f+50.0)
         gpsVerification=0
         break
       end
     end
   end
+  if gpsVerification==1 then
+    unixTimeJst=Time.at(unixTime[0]).to_f
+    puts "GPS signal was not detected."
+  end
+  # puts gpsVerification
+  # puts unixTimeJst.to_f
   gpsTimeTagModified=gpsTimeTag[0]&0xFFFFFFFFFF
   timeTagDiff=(eventFpgaTag[0]-gpsTimeTagModified)/1.0e8
   if timeTagDiff>900.0 then
@@ -196,4 +202,5 @@ fitData.each_line do |fitDataLine|
     eventHDU.addHeader("BINW_CH1", "NONE", "Bin width of Channel 1 in Energy (keV)")
   end
   fits.saveAs(newFitsFile)
+
 end
