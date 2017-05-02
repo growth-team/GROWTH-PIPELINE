@@ -84,8 +84,8 @@ while 1==1 do
     puts endTime.to_f
 =end
     startTime=(Time.parse("#{dateString}_000000").to_i).to_f
-    endTime=startTime+3600.0
-    binNum=(3600.0/binWidth).to_i
+    endTime=startTime+3600.0*24.0
+    binNum=(3600.0*24.0/binWidth).to_i
     
     hist=Root::TH1D.create("", "", binNum, startTime, endTime)
     
