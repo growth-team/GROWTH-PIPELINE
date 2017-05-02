@@ -41,22 +41,22 @@ while 1==1 do
     `rm #{fitsListAddress}`
   end
     
-  if Dir.glob("#{dateStringYesterday}_233*.fits.gz").empty?==false then
+  if Dir.glob("#{dateStringYesterday}_233*.fits.gz").empty? == false then
     `ls #{dateStringYesterday}_233*.fits.gz > #{fitsListAddress}`
-  elsif Dir.glob("#{dateStringYesterday}_234*.fits.gz").empty?==false then
+  elsif Dir.glob("#{dateStringYesterday}_234*.fits.gz").empty? == false then
     `ls #{dateStringYesterday}_234*.fits.gz > #{fitsListAddress}`
-  elsif Dir.glob("#{dateStringYesterday}_235*.fits.gz").empty?==false then
+  elsif Dir.glob("#{dateStringYesterday}_235*.fits.gz").empty? == false then
     `ls #{dateStringYesterday}_235*.fits.gz > #{fitsListAddress}`
   end
-  if Dir.glob("#{dateString}*.fits.gz").empty?==false then
+  if Dir.glob("#{dateString}*.fits.gz").empty? == false then
     puts "Fits File Exists"
     `ls #{dateString}*.fits.gz >> #{fitsListAddress}`
   end
-  if Dir.glob("#{dateStringTommorow}_000*.fits.gz").empty?==false then
+  if Dir.glob("#{dateStringTommorow}_000*.fits.gz").empty? == false then
     `ls #{dateStringTommorow}_000*.fits.gz >> #{fitsListAddress}`
-  elsif Dir.glob("#{dateStringTommorow}_001*.fits.gz").empty?==false then
+  elsif Dir.glob("#{dateStringTommorow}_001*.fits.gz").empty? == false then
     `ls #{dateStringTommorow}_001*.fits.gz >> #{fitsListAddress}`
-  elsif Dir.glob("#{dateStringTommorow}_002*.fits.gz").empty?==false then
+  elsif Dir.glob("#{dateStringTommorow}_002*.fits.gz").empty? == false then
     `ls #{dateStringTommorow}_002*.fits.gz >> #{fitsListAddress}`
   end
 
