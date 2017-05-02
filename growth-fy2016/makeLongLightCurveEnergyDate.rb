@@ -2,6 +2,7 @@
 require "RubyFits"
 require "RubyROOT"
 require "date"
+require "Time"
 include Math
 include Root
 include RootApp
