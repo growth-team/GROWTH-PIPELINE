@@ -8,6 +8,7 @@ include RootApp
 
 if ARGV[6]==nil then
   puts "Usage: ruby makeLongLightCurveDate.rb <start date> <end date> <adc channel> <bin size (sec)> <lower energy> <upper energy> <output directory>"
+  puts "Example: ruby makeLongLightCurveDate.rb 20161001 20170331 0 1 3.0 30.0 ./daily_lightcurve"
   exit 1
 end
 
@@ -28,14 +29,34 @@ index=0
 while 1==1 do
   downloadDate=startDateObject+index
   dateString=downloadDate.strftime("%Y%m%d")
+  downloadDate_yesterday=startDateObject+index-1
+  dateStringYesterday=downloadDate_yesterday.strftime("%Y%m%d")
+  downloadDate_tommorow=startDateObject+index+1
+  dateStringTommorow=downloadDate_tommorow.strftime("%Y%m%d")
+  
   puts dateString
   fitsListAddress="#{dateString}_fitsList.dat"
-  `ls #{dateString}*.fits.gz > #{fitsListAddress}`
+  if File.exists?("#{dateStringYesterday}_233*.fits.gz")==true then
+    `ls #{dateStringYesterday}_233*.fits.gz > #{fitsListAddress}`
+  elsif File.exists?("#{dateStringYesterday}_234*.fits.gz")==true then
+    `ls #{dateStringYesterday}_234*.fits.gz > #{fitsListAddress}`
+  elsif File.exists?("#{dateStringYesterday}_235*.fits.gz")==true then
+    `ls #{dateStringYesterday}_235*.fits.gz > #{fitsListAddress}`
+  end
+  `ls #{dateString}*.fits.gz >> #{fitsListAddress}`
+  if File.exists?("#{dateStringTommorow}_000*.fits.gz")==true then
+    `ls #{dateStringTommorow}_000*.fits.gz >> #{fitsListAddress}`
+  elsif File.exists?("#{dateStringTommorow}_001*.fits.gz")==true then
+    `ls #{dateStringTommorow}_001*.fits.gz >> #{fitsListAddress}`
+  elsif File.exists?("#{dateStringTommorow}_002*.fits.gz")==true then
+    `ls #{dateStringTommorow}_002*.fits.gz >> #{fitsListAddress}`
+  end
   
   fitsList=File.open(fitsListAddress, "r")
   fitsFile=fitsList.readlines
   fitsFileNum=fitsFile.length-1
   if fitsFileNum!=-1 then
+=begin
     fitsFirst=Fits::FitsFile.new(fitsFile[0].chomp!)
     startUnixTime=fitsFirst["EVENTS"]["unixTime"][0].to_f
     puts startUnixTime
@@ -54,6 +75,10 @@ while 1==1 do
     endTime=startTime+binWidth*binNum.to_f
     
     puts endTime.to_f
+=end
+    startTime=(Time.parse("#{dateString}_000000").to_i).to_f
+    endTime=startTime+3600.0
+    binNum=(3600.0/binWidth).to_i
     
     hist=Root::TH1D.create("", "", binNum, startTime, endTime)
     
@@ -91,7 +116,7 @@ while 1==1 do
     hist.GetYaxis().SetTitle("Count Rate (count/sec)")
     hist.GetYaxis().CenterTitle()
     hist.GetYaxis().SetTitleOffset(1.35)
-    gStyle.SetTimeOffset(-788918400)
+#    gStyle.SetTimeOffset(-788918400)
     gStyle.SetNdivisions(505)
     hist.SetStats(0)
     hist.GetXaxis().SetTimeDisplay(1)

@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 # growth-fy2016 pipeline level-2 Version 0
 # Created and maintained by Yuuki Wada
 # Created on 20161213
