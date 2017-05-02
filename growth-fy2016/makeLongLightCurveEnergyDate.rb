@@ -37,6 +37,10 @@ while 1==1 do
   
   puts dateString
   fitsListAddress="#{dateString}_fitsList.dat"
+  if File.exists?(fitsListAddress)==true then
+    `rm gitsListAddress`
+  end
+    
   if File.exists?("#{dateStringYesterday}_233*.fits.gz")==true then
     `ls #{dateStringYesterday}_233*.fits.gz > #{fitsListAddress}`
   elsif File.exists?("#{dateStringYesterday}_234*.fits.gz")==true then
@@ -44,7 +48,9 @@ while 1==1 do
   elsif File.exists?("#{dateStringYesterday}_235*.fits.gz")==true then
     `ls #{dateStringYesterday}_235*.fits.gz > #{fitsListAddress}`
   end
-  `ls #{dateString}*.fits.gz >> #{fitsListAddress}`
+  if File.exists?("#{dateString}*.fits.gz")==true then
+    `ls #{dateString}*.fits.gz >> #{fitsListAddress}`
+  end
   if File.exists?("#{dateStringTommorow}_000*.fits.gz")==true then
     `ls #{dateStringTommorow}_000*.fits.gz >> #{fitsListAddress}`
   elsif File.exists?("#{dateStringTommorow}_001*.fits.gz")==true then
@@ -52,11 +58,11 @@ while 1==1 do
   elsif File.exists?("#{dateStringTommorow}_002*.fits.gz")==true then
     `ls #{dateStringTommorow}_002*.fits.gz >> #{fitsListAddress}`
   end
-  
-  fitsList=File.open(fitsListAddress, "r")
-  fitsFile=fitsList.readlines
-  fitsFileNum=fitsFile.length-1
-  if fitsFileNum!=-1 then
+
+  if File.exists?(fitsListAddress)==true then
+    fitsList=File.open(fitsListAddress, "r")
+    fitsFile=fitsList.readlines
+    fitsFileNum=fitsFile.length-1
 =begin
     fitsFirst=Fits::FitsFile.new(fitsFile[0].chomp!)
     startUnixTime=fitsFirst["EVENTS"]["unixTime"][0].to_f
