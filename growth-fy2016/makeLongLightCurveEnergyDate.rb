@@ -38,25 +38,25 @@ while 1==1 do
   puts dateString
   fitsListAddress="#{dateString}_fitsList.dat"
   if File.exists?(fitsListAddress)==true then
-    `rm gitsListAddress`
+    `rm #{fitsListAddress}`
   end
     
-  if File.exists?("#{dateStringYesterday}_233*.fits.gz")==true then
+  if Dir.glob("#{dateStringYesterday}_233*.fits.gz").empty?==false then
     `ls #{dateStringYesterday}_233*.fits.gz > #{fitsListAddress}`
-  elsif File.exists?("#{dateStringYesterday}_234*.fits.gz")==true then
+  elsif Dir.glob("#{dateStringYesterday}_234*.fits.gz").empty?==false then
     `ls #{dateStringYesterday}_234*.fits.gz > #{fitsListAddress}`
-  elsif File.exists?("#{dateStringYesterday}_235*.fits.gz")==true then
+  elsif Dir.glob("#{dateStringYesterday}_235*.fits.gz").empty?==false then
     `ls #{dateStringYesterday}_235*.fits.gz > #{fitsListAddress}`
   end
-  if File.exists?("#{dateString}*.fits.gz")==true then
+  if Dir.glob("#{dateString}*.fits.gz").empty?==false then
     puts "Fits File Exists"
     `ls #{dateString}*.fits.gz >> #{fitsListAddress}`
   end
-  if File.exists?("#{dateStringTommorow}_000*.fits.gz")==true then
+  if Dir.glob("#{dateStringTommorow}_000*.fits.gz").empty?==false then
     `ls #{dateStringTommorow}_000*.fits.gz >> #{fitsListAddress}`
-  elsif File.exists?("#{dateStringTommorow}_001*.fits.gz")==true then
+  elsif Dir.glob("#{dateStringTommorow}_001*.fits.gz").empty?==false then
     `ls #{dateStringTommorow}_001*.fits.gz >> #{fitsListAddress}`
-  elsif File.exists?("#{dateStringTommorow}_002*.fits.gz")==true then
+  elsif Dir.glob("#{dateStringTommorow}_002*.fits.gz").empty?==false then
     `ls #{dateStringTommorow}_002*.fits.gz >> #{fitsListAddress}`
   end
 
