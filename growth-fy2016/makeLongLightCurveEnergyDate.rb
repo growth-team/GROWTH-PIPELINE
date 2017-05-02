@@ -49,7 +49,6 @@ while 1==1 do
     `ls #{dateStringYesterday}_235*.fits.gz > #{fitsListAddress}`
   end
   if Dir.glob("#{dateString}*.fits.gz").empty? == false then
-    puts "Fits File Exists"
     `ls #{dateString}*.fits.gz >> #{fitsListAddress}`
   end
   if Dir.glob("#{dateStringTommorow}_000*.fits.gz").empty? == false then
