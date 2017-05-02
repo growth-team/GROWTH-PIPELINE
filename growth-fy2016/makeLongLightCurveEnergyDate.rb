@@ -49,6 +49,7 @@ while 1==1 do
     `ls #{dateStringYesterday}_235*.fits.gz > #{fitsListAddress}`
   end
   if File.exists?("#{dateString}*.fits.gz")==true then
+    puts "Fits File Exists"
     `ls #{dateString}*.fits.gz >> #{fitsListAddress}`
   end
   if File.exists?("#{dateStringTommorow}_000*.fits.gz")==true then
