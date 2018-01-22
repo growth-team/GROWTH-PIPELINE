@@ -73,9 +73,9 @@ def verify_peak_file(fits_name, i)
 end
 
 def calc_gps_column_num(gpsTimeString)
-  for i in 0..999
-    if gpsTimeString[i]=="NULL" then
-      gps_column_num=i
+  for i in 1..999
+    if gpsTimeString[i]==gpsTimeString[i+1] then
+      gps_column_num=i-1
       break
     end
   end
@@ -86,7 +86,7 @@ def calc_fpga_clock(columnNum, unixTime, timeTag)
   calcClock=0
   for i in 0..columnNum-2
     deltaTimeTag=timeTag[i+1].to_f-timeTag[i].to_f
-    deltaUnixTime=unixTime[i+1].to_f-unixTime[i].to_f
+    deltaUnixTime=(deltaTimeTag/1.0e8).round
     calcClock+=(deltaTimeTag/deltaUnixTime)
   end
   clock=calcClock/(columnNum-1)
@@ -102,14 +102,14 @@ def energy_calibration(enabled_channel, adcIndex, phaMax, phaMin, energy_K, ener
   end
 end
 
-def time_calibration(eventTimeTag, gpsUnixTime, gpsTimeTag, gpsNum, gpsIndex)
+def time_calibration(output, eventTimeTag, gpsUnixTime, gpsTimeTag, gpsNum, gpsIndex, clock)
   gpsIndexLength=gpsIndex.length-1
-  clock=1.0e8
   if gpsIndexLength<gpsNum-1 then
     gpsTimeTagNow=(gpsTimeTag[gpsIndexLength].to_i)&0xFFFFFFFFFF
     gpsTimeTagNext=(gpsTimeTag[gpsIndexLength+1].to_i)&0xFFFFFFFFFF
     unixTimeNow=gpsUnixTime[gpsIndexLength].to_f
     unixTimeNext=gpsUnixTime[gpsIndexLength+1].to_f
+    clock=(gpsTimeTagNext-gpsTimeTagNow).to_f/(((gpsTimeTagNext-gpsTimeTagNow).to_f/1.0e8).round)
     deltaTime=(eventTimeTag-gpsTimeTagNow).to_f/clock
     if (deltaTime>3600.0)  then
       deltaTime=(eventTimeTag-gpsTimeTagNow-2**40).to_f/clock
@@ -125,18 +125,20 @@ def time_calibration(eventTimeTag, gpsUnixTime, gpsTimeTag, gpsNum, gpsIndex)
     if deltaTimeNext>0.0 then
       gpsIndex << 0
     end
-    return unixTimeNow+deltaTime
+    output[0]=unixTimeNow+deltaTime
+    output[1]=deltaTime-(deltaTime.floor).to_f
   else
     gpsTimeTagNow=(gpsTimeTag[gpsIndexLength].to_i)&0xFFFFFFFFFF
     unixTimeNow=gpsUnixTime[gpsIndexLength].to_f
-
     deltaTime=(eventTimeTag-gpsTimeTagNow).to_f/clock
+    puts 
     if (deltaTime>3600.0)  then
       deltaTime=(eventTimeTag-gpsTimeTagNow-2**40).to_f/clock
     elsif (deltaTime<-3600.0)  then
       deltaTime=(eventTimeTag-gpsTimeTagNow+2**40).to_f/clock
     end
-    return unixTimeNow+deltaTime
+    output[0]=unixTimeNow+deltaTime
+    output[1]=deltaTime-(deltaTime.floor).to_f
   end
 end    
 
@@ -167,6 +169,7 @@ fits_name=Array.new
 peak_K=Array.new
 peak_Tl=Array.new
 bin_width=Array.new
+time_output=Array.new
 
 #============================================
 # Main
@@ -179,8 +182,8 @@ end
 
 input_channel_num=enabled_channel.length
 
-fitsFolderLv1="#{fitsIndex}_fits_lv1_#{pipeline_version_short}"
-fitsFolderLv2="#{fitsIndex}_fits_lv2_#{pipeline_version_short}"
+fitsFolderLv1="#{fitsIndex}_fits_lv1"
+fitsFolderLv2="#{fitsIndex}_fits_lv2"
 if File.exists?(fitsFolderLv2)==false then
   `mkdir #{fitsFolderLv2}`
 end
@@ -205,32 +208,41 @@ for i in 0..peak_data_line[0].length-1
   eventColumnNum=eventHDU.nRows
   phaMax=eventHDU["phaMax"]
   phaMin=eventHDU["phaMin"]
+  #phaMin=eventHDU["phaFirst"]
   adcIndex=eventHDU["boardIndexAndChannel"]
   eventTimeTag=eventHDU["timeTag"]
   unixTime=timeHDU["unixTime"]
   gpsTimeTag=timeHDU["fpgaTimeTag"]
   gpsTimeString=timeHDU["gpsTime"]
-  gpsColumnNum=calc_gps_column_num(gpsTimeString)
+  gpsColumnNum=calc_gps_column_num(gpsTimeTag)
 
   eventUnixTime=FitsTableColumn.new
   eventUnixTime.initializeWithNameAndFormat("unixTime","D")
   eventUnixTime.setUnit("sec")
+  eventPreciseTime=FitsTableColumn.new
+  eventPreciseTime.initializeWithNameAndFormat("preciseTime","E")
+  eventPreciseTime.setUnit("sec")
   energy=FitsTableColumn.new
   energy.initializeWithNameAndFormat("energy","E")
   energy.setUnit("keV")
   eventUnixTime.resize(eventColumnNum)
+  eventPreciseTime.resize(eventColumnNum)
   energy.resize(eventColumnNum)
   eventHDU.appendColumn(eventUnixTime)
+  eventHDU.appendColumn(eventPreciseTime)
   eventHDU.appendColumn(energy)
   unixTimeWrite=eventHDU["unixTime"]
+  preciseTimeWrite=eventHDU["preciseTime"]
   energyWrite=eventHDU["energy"]
   gps_index=Array.new(1, 0)
 
-  #fpga_clock=calc_fpga_clock(gpsColumnNum, unixTime, gpsTimeTag)
+  fpga_clock=calc_fpga_clock(gpsColumnNum, unixTime, gpsTimeTag)
 
   for n in 0..eventColumnNum-1
     energyWrite[n]=energy_calibration(enabled_channel, adcIndex[n].to_i, phaMax[n].to_f, phaMin[n].to_f, energy_K, energy_Tl, peak_K, peak_Tl)
-    unixTimeWrite[n]=time_calibration(eventTimeTag[n].to_i, unixTime, gpsTimeTag, gpsColumnNum, gps_index)
+    time_calibration(time_output, eventTimeTag[n].to_i, unixTime, gpsTimeTag, gpsColumnNum, gps_index, fpga_clock)
+    unixTimeWrite[n]=time_output[0]
+    preciseTimeWrite[n]=time_output[1]
   end 
   
   eventHDU.addHeader("PIPELINE", "level-2", "present pipeline process level")

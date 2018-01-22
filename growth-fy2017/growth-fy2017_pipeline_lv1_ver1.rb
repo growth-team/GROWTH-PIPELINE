@@ -37,7 +37,7 @@ tempFitsList="#{fitsIndex}_work/fitslist.dat"
 errorFitsList="#{fitsIndex}_work/errorFitsList_#{date}.dat"
 workFolder="#{fitsIndex}_work"
 fitsFolderLv0="#{fitsIndex}_fits_lv0"
-fitsFolderLv1="#{fitsIndex}_fits_lv1_#{pipeline_version_short}"
+fitsFolderLv1="#{fitsIndex}_fits_lv1"
 
 if File.exists?(fitsFolderLv0)==false then
   puts "fits files do not exist"
