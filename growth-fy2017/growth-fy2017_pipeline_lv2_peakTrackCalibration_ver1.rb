@@ -52,8 +52,8 @@ preFitTl[1]=peak_chan*energy_Tl/(1.0e3*peak_energy)
 preFitTl[2]=preFitTl[1]*resolution/2.35
 
 fitLoop=5
-fitRangeConstK=[0.8, 1.3]
-fitRangeConstTl=[1.0, 1.3]
+fitRangeConstK=[0.8, 1.4]
+fitRangeConstTl=[1.0, 1.4]
 fitRangeK=[fitRangeConstK[0]*preFitK[2], fitRangeConstK[1]*preFitK[2]]
 fitRangeTl=[fitRangeConstTl[0]*preFitTl[2], fitRangeConstTl[1]*preFitTl[2]]
 
