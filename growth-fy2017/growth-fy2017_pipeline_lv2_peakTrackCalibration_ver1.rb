@@ -21,6 +21,10 @@ rebin=ARGV[5].to_i
 fitsListAddress="#{fitsHead}_work/fitslist.dat"
 outputFile="#{fitsHead}_work/peakList_ch#{channel.to_s}.dat"
 
+if File.exists?(outputFile)==true then
+  `rm #{outputFile}`
+end
+
 fitsFileNameAddress=Array.new
 meanK=Array.new
 meanTl=Array.new
@@ -63,7 +67,7 @@ fitsList=File.open(fitsListAddress, "r")
 fitsList.each_line.with_index do |fitsName, fitsIndex|
   fitsName.chomp!
   fitsFileNameAddress[fitsIndex]=fitsName
-  fits=Fits::FitsFile.new("#{fitsHead}_fits_lv1_ver1/#{fitsName}")
+  fits=Fits::FitsFile.new("#{fitsHead}_fits_lv1/#{fitsName}")
   timeHDU=fits["GPS"]
   eventHDU=fits["EVENTS"]
   eventNum=eventHDU.getNRows()
