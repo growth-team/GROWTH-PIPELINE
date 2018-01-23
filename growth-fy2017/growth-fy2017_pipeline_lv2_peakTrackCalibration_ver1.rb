@@ -21,6 +21,10 @@ rebin=ARGV[5].to_i
 fitsListAddress="#{fitsHead}_work/fitslist.dat"
 outputFile="#{fitsHead}_work/peakList_ch#{channel.to_s}.dat"
 
+if File.exists?(outputFile)==true then
+  `rm #{outputFile}`
+end
+
 fitsFileNameAddress=Array.new
 meanK=Array.new
 meanTl=Array.new
@@ -48,8 +52,8 @@ preFitTl[1]=peak_chan*energy_Tl/(1.0e3*peak_energy)
 preFitTl[2]=preFitTl[1]*resolution/2.35
 
 fitLoop=5
-fitRangeConstK=[1.0, 1.7]
-fitRangeConstTl=[1.2, 1.7]
+fitRangeConstK=[0.8, 1.4]
+fitRangeConstTl=[1.0, 1.4]
 fitRangeK=[fitRangeConstK[0]*preFitK[2], fitRangeConstK[1]*preFitK[2]]
 fitRangeTl=[fitRangeConstTl[0]*preFitTl[2], fitRangeConstTl[1]*preFitTl[2]]
 
@@ -63,7 +67,7 @@ fitsList=File.open(fitsListAddress, "r")
 fitsList.each_line.with_index do |fitsName, fitsIndex|
   fitsName.chomp!
   fitsFileNameAddress[fitsIndex]=fitsName
-  fits=Fits::FitsFile.new("#{fitsHead}_fits_lv1_ver1/#{fitsName}")
+  fits=Fits::FitsFile.new("#{fitsHead}_fits_lv1/#{fitsName}")
   timeHDU=fits["GPS"]
   eventHDU=fits["EVENTS"]
   eventNum=eventHDU.getNRows()

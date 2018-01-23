@@ -29,7 +29,7 @@ fitsList=File.open(fitsListAddress, "r")
 fitsList.each_line.with_index do |fitsName, fitsIndex|
   fitsName.chomp!
   fitsFileNameAddress[fitsIndex]=fitsName
-  fits=Fits::FitsFile.new("#{fitsHead}_fits_lv1_ver1/#{fitsName}")
+  fits=Fits::FitsFile.new("#{fitsHead}_fits_lv1/#{fitsName}")
   timeHDU=fits["GPS"]
   eventHDU=fits["EVENTS"]
   eventNum=eventHDU.getNRows()

@@ -6,6 +6,7 @@
 require "json"
 require "shellwords"
 require "RubyFits"
+require "time"
 include Math
 include Fits
 
@@ -102,44 +103,21 @@ def energy_calibration(enabled_channel, adcIndex, phaMax, phaMin, energy_K, ener
   end
 end
 
-def time_calibration(output, eventTimeTag, gpsUnixTime, gpsTimeTag, gpsNum, gpsIndex, clock)
-  gpsIndexLength=gpsIndex.length-1
-  if gpsIndexLength<gpsNum-1 then
-    gpsTimeTagNow=(gpsTimeTag[gpsIndexLength].to_i)&0xFFFFFFFFFF
-    gpsTimeTagNext=(gpsTimeTag[gpsIndexLength+1].to_i)&0xFFFFFFFFFF
-    unixTimeNow=gpsUnixTime[gpsIndexLength].to_f
-    unixTimeNext=gpsUnixTime[gpsIndexLength+1].to_f
-    clock=(gpsTimeTagNext-gpsTimeTagNow).to_f/(((gpsTimeTagNext-gpsTimeTagNow).to_f/1.0e8).round)
-    deltaTime=(eventTimeTag-gpsTimeTagNow).to_f/clock
-    if (deltaTime>3600.0)  then
-      deltaTime=(eventTimeTag-gpsTimeTagNow-2**40).to_f/clock
-    elsif (deltaTime<-3600.0)  then
-      deltaTime=(eventTimeTag-gpsTimeTagNow+2**40).to_f/clock
-    end
-    deltaTimeNext=(eventTimeTag-gpsTimeTagNext).to_f/clock
-    if (deltaTimeNext>3600.0)  then
-      deltaTimeNext=(eventTimeTag-gpsTimeTagNext-2**40).to_f/clock
-    elsif (deltaTimeNext<-3600.0)  then
-      deltaTimeNext=(eventTimeTag-gpsTimeTagNext+2**40).to_f/clock
-    end
-    if deltaTimeNext>0.0 then
-      gpsIndex << 0
-    end
-    output[0]=unixTimeNow+deltaTime
-    output[1]=deltaTime-(deltaTime.floor).to_f
-  else
-    gpsTimeTagNow=(gpsTimeTag[gpsIndexLength].to_i)&0xFFFFFFFFFF
-    unixTimeNow=gpsUnixTime[gpsIndexLength].to_f
-    deltaTime=(eventTimeTag-gpsTimeTagNow).to_f/clock
-    if (deltaTime>3600.0)  then
-      deltaTime=(eventTimeTag-gpsTimeTagNow-2**40).to_f/clock
-    elsif (deltaTime<-3600.0)  then
-      deltaTime=(eventTimeTag-gpsTimeTagNow+2**40).to_f/clock
-    end
-    output[0]=unixTimeNow+deltaTime
-    output[1]=deltaTime-(deltaTime.floor).to_f
+def time_calibration(output, eventTimeTag, eventTimeTagFirst, startTime, clock)
+  deltaTimeTag=eventTimeTag-eventTimeTagFirst
+  if deltaTimeTag<0 then
+    deltaTimeTag+=2**40
   end
-end    
+  deltaTime=deltaTimeTag.to_f/clock
+  output[0]=startTime+deltaTime
+  output[1]=deltaTime-(deltaTime.floor).to_f
+end
+
+def extract_startTime(file_name)
+  time_parse=file_name.split(".")
+  unixTimeStart=Time.parse(time_parse[0]).to_i
+  return unixTimeStart
+end
 
 def write_header(eventHDU, channel, enabled_channel, peak_K, peak_Tl, bin_width)
   if enabled_channel.include?(channel)==true then
@@ -235,11 +213,13 @@ for i in 0..peak_data_line[0].length-1
   energyWrite=eventHDU["energy"]
   gps_index=Array.new(1, 0)
 
-  fpga_clock=calc_fpga_clock(gpsColumnNum, unixTime, gpsTimeTag)
-
+  #fpga_clock=calc_fpga_clock(gpsColumnNum, unixTime, gpsTimeTag)
+  fpga_clock=1.0e8
+  startTime=extract_startTime(fits_name[0])
+  
   for n in 0..eventColumnNum-1
     energyWrite[n]=energy_calibration(enabled_channel, adcIndex[n].to_i, phaMax[n].to_f, phaMin[n].to_f, energy_K, energy_Tl, peak_K, peak_Tl)
-    time_calibration(time_output, eventTimeTag[n].to_i, unixTime, gpsTimeTag, gpsColumnNum, gps_index, fpga_clock)
+    time_calibration(time_output, eventTimeTag[n].to_i, eventTimeTag[0].to_i, startTime.to_f, fpga_clock)
     unixTimeWrite[n]=time_output[0]
     preciseTimeWrite[n]=time_output[1]
   end 

@@ -1,0 +1,149 @@
+#!/usr/bin/env ruby
+# coding: utf-8
+# growth-fy2017 pipeline
+# Created and maintained by Yuuki Wada
+# Created on 20180123
+
+require "yaml"
+
+puts ""
+puts "  #######################################"
+puts "  ## GROWTH-PIPELINE for growth-fy2017 ##"
+puts "  ##         January 23rd, 2018        ##"
+puts "  ## Yuuki Wada  (University of Tokyo) ##"
+puts "  #######################################"
+puts ""
+
+#============================================
+# Define modules
+#============================================
+
+def argument_check(argument)
+  if (argument==nil) then
+    puts "Usage: growth-pipeline <Mode>"
+    puts "Mode should be 'ql' or 'process'."
+    puts ""
+    exit 1
+  end
+end
+
+def parse_name()
+  dir=`pwd`
+  dir_parse=dir.split("/")
+  det_index=dir_parse[dir_parse.length-1]
+  fiscal_year=dir_parse[dir_parse.length-2]
+  det_id=dir_parse[dir_parse.length-3]
+  det_info=[det_id, fiscal_year, det_index]
+  return det_info
+end
+
+def quick_look()
+  det_info=parse_name()
+  det_index=det_info[2]
+  result=`growth-fy2017_pipeline_lv0_quickLook_ver1.rb #{det_index}`
+  puts result
+end
+
+def process_argument_check(argv)
+  if argv[1]==nil then
+    puts "Processing Mode"
+    puts "Usage: growth-pipeline <Mode> <YAML FILE>"
+    puts ""
+    exit 1
+  end
+end
+
+def caldb_address(det_info)
+  caldb_origin=`echo $GROWTHCALDB`
+  caldb="#{caldb_origin.chomp!}/#{det_info[1]}_winter/#{det_info[0]}.json"
+  if File.exists?(caldb)==false then
+    puts "CALDB file in not found!"
+    puts "1. Do you execute in the correct directory?"
+    puts "2. Do you copy the CALDB files in your computer?"
+    puts "3. Is PATH of GROWTHCALDB correctly set up in your .bashrc?"
+    exit 1
+  end
+  return caldb
+end
+
+def process_lv1(det_info)
+  caldb=caldb_address(det_info)
+  index=det_info[2]
+  result=`growth-fy2017_pipeline_lv1_ver1.rb #{index.chomp!} #{caldb}`
+  puts result
+end
+
+def dicide_resolution(crystal)
+  if crystal=="bgo" then
+    resolution=0.15
+  elsif (crystal=="nai")&&(crystal=="csi")&&(crystal=="gso") then
+    resolution=0.1
+  else
+    resolution=0.1
+  end
+  return resolution
+end
+
+def process_calibration(det_info, cal_info)
+  det_index=det_info[2]
+  cal_switch=Array.new
+  for i in 0..3
+    cal_type=cal_info["ch#{i.to_s}"][0]
+    if cal_type=="track"
+      mean=cal_info["ch#{i.to_s}"][1]
+      energy=cal_info["ch#{i.to_s}"][2]
+      crystal=cal_info["ch#{i.to_s}"][3]
+      resolution=dicide_resolution(crystal)
+      rebin=2
+      result=`growth-fy2017_pipeline_lv2_peakTrackCalibration_ver1.rb #{det_index} #{i.to_s} #{mean.to_s} #{energy.to_s} #{resolution.to_s} #{rebin.to_s}`
+      puts result
+      cal_switch[i]="true"
+    elsif cal_type=="const"
+      mean=cal_info["ch#{i.to_s}"][1]
+      energy=cal_info["ch#{i.to_s}"][2]
+      result=`growth-fy2017_pipeline_lv2_peakFileGenerator_ver1.rb #{det_index} #{i.to_s} #{mean.to_s} #{energy.to_s}`
+      puts result
+      cal_switch[i]="true"
+    else
+      cal_switch[i]="false"
+    end
+  end
+  return cal_switch
+end
+
+def process_lv2(det_info, cal_switch)
+  det_index=det_info[2]
+  result=`growth-fy2017_pipeline_lv2_ver1.rb #{det_index} #{cal_switch[0]} #{cal_switch[1]} #{cal_switch[2]} #{cal_switch[3]}`
+  puts result
+end
+
+def process(yaml_name)
+  det_info=parse_name()
+  cal_info=YAML.load_file(yaml_name)
+  process_lv1(det_info)
+  cal_switch=process_calibration(det_info, cal_info)
+  process_lv2(det_info, cal_switch)
+end
+
+def no_matched_argument()
+  puts "Mode should be 'ql' or 'process'."
+  exit 1
+end
+
+def main(argv)
+  argument_check(argv[0])
+  if argv[0]=="ql" then
+    quick_look()
+  elsif argv[0]=="process" then
+    process_argument_check(argv)
+    yaml_name=argv[1]
+    process(yaml_name)
+  else
+    no_matched_argument()
+  end
+end  
+
+#============================================
+# Main
+#============================================
+main(ARGV)
