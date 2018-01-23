@@ -131,7 +131,6 @@ def time_calibration(output, eventTimeTag, gpsUnixTime, gpsTimeTag, gpsNum, gpsI
     gpsTimeTagNow=(gpsTimeTag[gpsIndexLength].to_i)&0xFFFFFFFFFF
     unixTimeNow=gpsUnixTime[gpsIndexLength].to_f
     deltaTime=(eventTimeTag-gpsTimeTagNow).to_f/clock
-    puts 
     if (deltaTime>3600.0)  then
       deltaTime=(eventTimeTag-gpsTimeTagNow-2**40).to_f/clock
     elsif (deltaTime<-3600.0)  then
