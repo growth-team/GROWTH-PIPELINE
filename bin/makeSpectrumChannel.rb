@@ -19,8 +19,8 @@ eventHDU=fits["EVENTS"]
 adcIndex=eventHDU["boardIndexAndChannel"]
 eventNum=eventHDU.getNRows()
 
-binNum=1024/rebin
-hist=Root::TH1F.create("hist", "hist", binNum, -0.5, 1023.5)
+binNum=4096/rebin
+hist=Root::TH1F.create("hist", "hist", binNum, -0.5, 4095.5)
 
 for i in 0..(eventNum.to_i-1)
   if adcIndex[i].to_i==adcChannel then
@@ -36,7 +36,7 @@ hist.GetYaxis.SetTitle("Count")
 hist.GetYaxis.CenterTitle
 hist.GetYaxis.SetTitleOffset(1.35)
 #hist.GetYaxis.SetRangeUser(0.5, 100000)
-hist.GetXaxis.SetRangeUser(512, 1024)
+#hist.GetXaxis.SetRangeUser(512, 1024)
 hist.Draw()
 c0.SetLogy()
 c0.Update
