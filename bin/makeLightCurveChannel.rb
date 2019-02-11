@@ -21,8 +21,6 @@ eventHDU=fits["EVENTS"]
 adcIndex=eventHDU["boardIndexAndChannel"]
 phaMax=eventHDU["phaMax"]
 unixTime=eventHDU["unixTime"]
-#energyWidth_header="BINW_CH#{adcChannel}"
-#energyWidth=eventHDU.header(energyWidth_header).to_f
 eventNum=eventHDU.getNRows()-1
 
 obsStartTime=unixTime[0].to_f
@@ -57,20 +55,8 @@ hist.SetStats(0)
 gStyle.SetTimeOffset(-788918400)
 gStyle.SetNdivisions(505)
 hist.GetXaxis().SetTimeDisplay(1)
-#hist.GetXaxis().SetTimeFormat("%m/%d %H:%M")
 hist.GetXaxis().SetTimeFormat("%H:%M:%S")
 
-hist.Draw("e1")
+hist.Draw("e")
 c0.Update()
 run_app()
-
-#hist.GetYaxis.SetRangeUser(0, 70)
-#
-#output=File.open("longLightCurveLaw.dat", "w+")
-#i=0
-#countSec.each do
-#  line=time[i].to_s+"\t"+errorTime[i].to_s+"\t"+countSec[i].to_s+"\t"+errorCountSec[i].to_s+"\n"
-#  output.write(line)
-#  i+=1
-#end
-
