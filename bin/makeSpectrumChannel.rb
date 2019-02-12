@@ -14,6 +14,7 @@ end
 fitsFile=ARGV[0]
 adcChannel=ARGV[1].to_i
 rebin=ARGV[2].to_i
+mode=ARGV[3]
 fits=Fits::FitsFile.new(fitsFile)
 eventHDU=fits["EVENTS"]
 adcIndex=eventHDU["boardIndexAndChannel"]
@@ -24,12 +25,14 @@ hist=Root::TH1F.create("hist", "hist", binNum, -0.5, 4095.5)
 
 for i in 0..(eventNum.to_i-1)
   if adcIndex[i].to_i==adcChannel then
-    if mode==0 then
+    if mode=="0" then
       hist.Fill(eventHDU["phaMax"][i].to_f)
     else
       hist.Fill(eventHDU["phaMax"][i].to_f-eventHDU["phaMin"][i].to_f)
+    end
   end
 end
+
 c0=Root::TCanvas.create("c0", "canvas0", 640, 480)
 hist.SetTitle("Spectrum")
 hist.GetXaxis().SetTitle("Channel")

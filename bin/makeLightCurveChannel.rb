@@ -44,16 +44,14 @@ scaleFactor=1.0/binWidth
 hist.Sumw2()
 hist.Scale(scaleFactor)
 hist.SetTitle("Count Rate")
-hist.GetXaxis.SetTitle("Date (JST)")
-hist.GetXaxis.SetTitleOffset(1.2)
-hist.GetXaxis.CenterTitle
-hist.GetXaxis.SetRangeUser(binStart, binEnd)
-hist.GetYaxis.SetTitle("Count Rate (count/sec)")
-hist.GetYaxis.CenterTitle
-hist.GetYaxis.SetTitleOffset(1.35)
+hist.GetXaxis().SetTitle("Date (JST)")
+hist.GetXaxis().SetTitleOffset(1.2)
+hist.GetXaxis().CenterTitle()
+hist.GetXaxis().SetRangeUser(binStart, binEnd)
+hist.GetYaxis().SetTitle("Count Rate (count/sec)")
+hist.GetYaxis().CenterTitle()
+hist.GetYaxis().SetTitleOffset(1.35)
 hist.SetStats(0)
-gStyle.SetTimeOffset(-788918400)
-gStyle.SetNdivisions(505)
 hist.GetXaxis().SetTimeDisplay(1)
 hist.GetXaxis().SetTimeFormat("%H:%M:%S")
 
