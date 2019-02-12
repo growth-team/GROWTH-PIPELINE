@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# coding: utf-8
 # growth-fy2018 pipeline level-2 Version 1
 # Created and maintained by Yuuki Wada
 # Created on 20190212
@@ -103,14 +104,53 @@ def energy_calibration(enabled_channel, adcIndex, phaMax, phaMin, energy_K, ener
   end
 end
 
-def time_calibration(output, eventTimeTag, gpsUnixTime, gpsTimeTag, gpsNum, gpsIndex, clock)
+def gps_verification(gpsTimeString)
+  parse=gpsTimeString[0].split("\s")
+  if (parse[0]=="GP")||(parse[0]=="NULL") then
+    return false
+  else
+    return true
+  end
+end
+
+def calc_first_unixTime(unixTime, gpsTimeString)
+  utcLag=3600.0*9.0
+  switch=false
+  for i in -600..600
+    unixTimeUtc=Time.at(unixTime[0].to_f-utcLag+i.to_f).strftime("%H%M%S")
+    if gpsTimeString[0][8..13]==unixTimeUtc then
+      unixTimeFirst=unixTime[0].to_f+i.to_f+1.0
+      switch=true
+      break
+    end
+  end
+  if switch==true then
+    return unixTimeFirst
+  else
+    return false
+  end
+end
+
+def gps_time_calibration(output, eventTimeTag, firstUnixTime, gpsUnixTime, gpsTimeTag, gpsNum, gpsIndex, clock)
   gpsIndexLength=gpsIndex.length-1
   if gpsIndexLength<gpsNum-1 then
+    gpsTimeTagFirst=(gpsTimeTag[0].to_i)&0xFFFFFFFFFF
     gpsTimeTagNow=(gpsTimeTag[gpsIndexLength].to_i)&0xFFFFFFFFFF
     gpsTimeTagNext=(gpsTimeTag[gpsIndexLength+1].to_i)&0xFFFFFFFFFF
-    unixTimeNow=gpsUnixTime[gpsIndexLength].to_f
-    unixTimeNext=gpsUnixTime[gpsIndexLength+1].to_f
-    clock=(gpsTimeTagNext-gpsTimeTagNow).to_f/(((gpsTimeTagNext-gpsTimeTagNow).to_f/1.0e8).round)
+    deltaGpsTimeTagNextNow=gpsTimeTagNext-gpsTimeTagNow
+    if deltaGpsTimeTagNextNow<0 then
+      deltaGpsTimeTagNextNow+=2**40
+    end
+    deltaGpsTimeNextNow=((deltaGpsTimeTagNextNow.to_f)/1.0e8).round()
+    clock=deltaGpsTimeTagNextNow.to_f/(deltaGpsTimeNextNow).to_f
+
+    deltaGpsTimeTag=gpsTimeTagNow-gpsTimeTagFirst
+    if deltaGpsTimeTag.to_f/clock<-60.0 then
+      deltaGpsTimeTag+=2**40
+    end
+    
+    unixTimeNow=firstUnixTime+((deltaGpsTimeTag.to_f/clock).round()).to_f
+    unixTimeNext=unixTimeNow+deltaGpsTimeNextNow.to_f
     deltaTime=(eventTimeTag-gpsTimeTagNow).to_f/clock
     if (deltaTime>3600.0)  then
       deltaTime=(eventTimeTag-gpsTimeTagNow-2**40).to_f/clock
@@ -129,8 +169,22 @@ def time_calibration(output, eventTimeTag, gpsUnixTime, gpsTimeTag, gpsNum, gpsI
     output[0]=unixTimeNow+deltaTime
     output[1]=deltaTime-(deltaTime.floor).to_f
   else
+    gpsTimeTagFirst=(gpsTimeTag[0].to_i)&0xFFFFFFFFFF
     gpsTimeTagNow=(gpsTimeTag[gpsIndexLength].to_i)&0xFFFFFFFFFF
-    unixTimeNow=gpsUnixTime[gpsIndexLength].to_f
+    gpsTimeTagPast=(gpsTimeTag[gpsIndexLength-1].to_i)&0xFFFFFFFFFF
+    deltaGpsTimeTagNowPast=gpsTimeTagNow-gpsTimeTagPast
+    if deltaGpsTimeTagNowPast<0 then
+      deltaGpsTimeTagNowPast+=2**40
+    end
+    deltaGpsTimeNowPast=((deltaGpsTimeTagNowPast.to_f)/1.0e8).round()
+    clock=deltaGpsTimeTagNowPast.to_f/(deltaGpsTimeNowPast).to_f
+
+    deltaGpsTimeTag=gpsTimeTagNow-gpsTimeTagFirst
+    if deltaGpsTimeTag.to_f/clock<-60.0 then
+      deltaGpsTimeTag+=2**40
+    end
+    
+    unixTimeNow=firstUnixTime+((deltaGpsTimeTag.to_f/clock).round()).to_f
     deltaTime=(eventTimeTag-gpsTimeTagNow).to_f/clock
     if (deltaTime>3600.0)  then
       deltaTime=(eventTimeTag-gpsTimeTagNow-2**40).to_f/clock
@@ -141,6 +195,19 @@ def time_calibration(output, eventTimeTag, gpsUnixTime, gpsTimeTag, gpsNum, gpsI
     output[1]=deltaTime-(deltaTime.floor).to_f
   end
 end    
+
+def non_gps_time_calibration(output, eventTimeTag, gpsUnixTime, gpsTimeTag, clock)
+  firstUnixTime=gpsUnixTime[0].to_f
+  gpsTimeTagNow=(gpsTimeTag[0].to_i)&0xFFFFFFFFFF
+  deltaTime=(eventTimeTag-gpsTimeTagNow).to_f/clock
+  if (deltaTime>3600.0)  then
+    deltaTime=(eventTimeTag-gpsTimeTagNow-2**40).to_f/clock
+  elsif (deltaTime<-3600.0)  then
+    deltaTime=(eventTimeTag-gpsTimeTagNow+2**40).to_f/clock
+  end
+  output[0]=firstUnixTime+deltaTime
+  output[1]=deltaTime-(deltaTime.floor).to_f
+end
 
 def write_header(eventHDU, channel, enabled_channel, peak_K, peak_Tl, bin_width)
   if enabled_channel.include?(channel)==true then
@@ -208,7 +275,6 @@ for i in 0..peak_data_line[0].length-1
   eventColumnNum=eventHDU.nRows
   phaMax=eventHDU["phaMax"]
   phaMin=eventHDU["phaMin"]
-  #phaMin=eventHDU["phaFirst"]
   adcIndex=eventHDU["boardIndexAndChannel"]
   eventTimeTag=eventHDU["timeTag"]
   unixTime=timeHDU["unixTime"]
@@ -236,11 +302,29 @@ for i in 0..peak_data_line[0].length-1
   energyWrite=eventHDU["energy"]
   gps_index=Array.new(1, 0)
 
-  fpga_clock=calc_fpga_clock(gpsColumnNum, unixTime, gpsTimeTag)
+  gps_status=gps_verification(gpsTimeString)
+  if gps_status==true then
+    fpga_clock=calc_fpga_clock(gpsColumnNum, unixTime, gpsTimeTag)
+    first_unixTime=calc_first_unixTime(unixTime, gpsTimeString)
+    if first_unixTime==false then
+      fpga_clock=1.0e8
+      gps_status=false
+    end
+  else
+    fpga_clock=1.0e8
+  end
 
+  if gps_status==true then
+    puts "GPS signals are used for timing calibration."
+  end
+  
   for n in 0..eventColumnNum-1
     energyWrite[n]=energy_calibration(enabled_channel, adcIndex[n].to_i, phaMax[n].to_f, phaMin[n].to_f, energy_K, energy_Tl, peak_K, peak_Tl)
-    time_calibration(time_output, eventTimeTag[n].to_i, unixTime, gpsTimeTag, gpsColumnNum, gps_index, fpga_clock)
+    if gps_status==true then
+      gps_time_calibration(time_output, eventTimeTag[n].to_i, first_unixTime, unixTime, gpsTimeTag, gpsColumnNum, gps_index, fpga_clock)
+    else
+      non_gps_time_calibration(time_output, eventTimeTag[n].to_i, unixTime, gpsTimeTag, fpga_clock)
+    end
     unixTimeWrite[n]=time_output[0]
     preciseTimeWrite[n]=time_output[1]
   end 
@@ -248,7 +332,11 @@ for i in 0..peak_data_line[0].length-1
   eventHDU.addHeader("PIPELINE", "level-2", "present pipeline process level")
   eventHDU.addHeader("PL2_DATE", "#{date}", "pipeline level-2 processing date")
   eventHDU.addHeader("PL2_VER", "#{pipeline_version}", "pipeline level-2 version")
-  eventHDU.addHeader("TIME_CAL", "2", "method of time calibration")
+  if gps_status==true then
+    eventHDU.addHeader("TIME_CAL", "2", "method of time calibration")
+  else
+    eventHDU.addHeader("TIME_CAL", "1", "method of time calibration")
+  end
   eventHDU.appendComment("TIME_CAL: method of time calibration 0:from file name, 1:from UNIXTIME, 2:from GPS time")
 
   for n in 0..3
