@@ -303,6 +303,10 @@ for i in 0..peak_data_line[0].length-1
   gps_index=Array.new(1, 0)
 
   gps_status=gps_verification(gpsTimeString)
+  if gpsColumnNum<5 then
+    gps_status=false
+  end
+  
   if gps_status==true then
     fpga_clock=calc_fpga_clock(gpsColumnNum, unixTime, gpsTimeTag)
     first_unixTime=calc_first_unixTime(unixTime, gpsTimeString)
