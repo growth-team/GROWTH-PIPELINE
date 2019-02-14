@@ -75,7 +75,7 @@ def verify_peak_file(fits_name, i)
 end
 
 def calc_gps_column_num(gpsTimeString)
-  for i in 1..999
+  for i in 0..999
     if gpsTimeString[i]==gpsTimeString[i+1] then
       gps_column_num=i-1
       break
