@@ -78,8 +78,10 @@ def calc_gps_column_num(gpsTimeString)
   for i in 0..999
     if gpsTimeString[i]=="NULL" then
       gps_column_num=i
+      break
     end
-    for i in 1..gps_column_num-1
+  end
+  for i in 1..gps_column_num-1
     if gpsTimeString[i-1]==gpsTimeString[i] then
       gps_column_num=-1
       break
@@ -284,7 +286,7 @@ for i in 0..peak_data_line[0].length-1
   unixTime=timeHDU["unixTime"]
   gpsTimeTag=timeHDU["fpgaTimeTag"]
   gpsTimeString=timeHDU["gpsTime"]
-  gpsColumnNum=calc_gps_column_num(gpsTimeTag)
+  gpsColumnNum=calc_gps_column_num(gpsTimeString)
 
   eventUnixTime=FitsTableColumn.new
   eventUnixTime.initializeWithNameAndFormat("unixTime","D")
@@ -307,7 +309,7 @@ for i in 0..peak_data_line[0].length-1
   gps_index=Array.new(1, 0)
 
   gps_status=gps_verification(gpsTimeString)
-  if gpsColumnNum<5 then
+  if gpsColumnNum<3 then
     gps_status=false
   end
   
