@@ -76,8 +76,12 @@ end
 
 def calc_gps_column_num(gpsTimeString)
   for i in 0..999
-    if gpsTimeString[i]==gpsTimeString[i+1] then
-      gps_column_num=i-1
+    if gpsTimeString[i]=="NULL" then
+      gps_column_num=i
+    end
+    for i in 1..gps_column_num-1
+    if gpsTimeString[i-1]==gpsTimeString[i] then
+      gps_column_num=-1
       break
     end
   end
