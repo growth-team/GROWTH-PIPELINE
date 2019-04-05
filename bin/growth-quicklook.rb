@@ -4,6 +4,7 @@ require "RubyROOT"
 require "RubyFits"
 require "date"
 include Root
+include RootApp
 include Fits
 include Math
 
@@ -12,7 +13,7 @@ def plotSetting(hist, xtitle, ytitle)
   hist.GetXaxis().SetTitle(xtitle)
   hist.GetYaxis().SetTitle(ytitle)
   hist.SetStats(0)
-  hist.Sumw2()
+  #hist.Sumw2()
 end
 
 def showUsage(argv)
@@ -26,7 +27,7 @@ end
 def createOutputFolder(dir)
   if !File.exists?(dir) then
     puts "#{dir} does not exist. Create it."
-    `mkdir #{dir}`
+    `mkdir -p #{dir}`
   end
 end
 
@@ -65,10 +66,10 @@ def extractObsTime(startTimeTag, stopTimeTag)
   end
 end
 
-def fillHist(fitsAddress, observationTimeTotal, adcChannel, hist, spec, lc0, lc1, delta_trrigger)
+def fillHist(fitsAddress, observationTimeTotal, adcChannel, hist, spec, lc0, lc1, delta_trigger)
   fits=Fits::FitsFile.new(fitsAddress)
   eventHDU=fits["EVENTS"]
-  timeTag=eventHDU["timeTa1g"]
+  timeTag=eventHDU["timeTag"]
   phaMax=eventHDU["phaMax"]
   phaMin=eventHDU["phaMin"]
   triggerCount=eventHDU["triggerCount"]
@@ -114,12 +115,12 @@ def fillHist(fitsAddress, observationTimeTotal, adcChannel, hist, spec, lc0, lc1
 end
 
 
-def saveHistPic(observationTimeTotal, oututFileDir, date, spec, lc0, lc1, delta_trigger, c0)
-  spec.Scale(1.0/observationTimeTotal)
+def saveHistPic(observationTimeTotal, adcChannel, outputFileDir, date, spec, lc0, lc1, delta_trigger, c0)
   plotSetting(spec, "channel", "Count s^{-1} ch^{-1}")
   plotSetting(lc0, "Hour", "Count s^{-1}")
   plotSetting(lc1, "Hour", "Count s^{-1}")
   plotSetting(delta_trigger, "Hour", "unread event")
+  #spec.Scale(1.0/observationTimeTotal)
   spec.Draw("h")
   c0.SetLogy(1)
   c0.Update()
@@ -146,14 +147,10 @@ adcChannel=ARGV[5].to_i
 lc_width=[1.0, 10.0]
 lc_binNum=[25*3600/lc_width[0].to_i, 25*3600/lc_width[1].to_i]
 
-#showUsage(ARGV[5])
+showUsage(ARGV[5])
 outputFileDir="#{output_dir}/#{detector}"
-#createOutputFolder(outputFileDir)
+createOutputFolder(outputFileDir)
 dateList=extractDateList(start_date, end_date)
-puts dateList
-
-exit
-
 
 c0=Root::TCanvas.create("c0", "canvas0", 640, 480)
 
@@ -161,9 +158,10 @@ hist=Root::TH2F.create("hist", "hist", 2400, 0.0, 2400.0, 2048, 2047.5, 4095.5)
 spec=Root::TH1F.create("spec", "spec", 2048, 2047.5, 4095.5)
 lc0=Root::TH1F.create("lc0", "lc0", lc_binNum[0], 0.0, 25.0)
 lc1=Root::TH1F.create("lc1", "lc1", lc_binNum[1], 0.0, 25.0)
-delta_trigger=Root::TH1F.create("delta_trigger", "delta_trigger", lc_binNum, 0.0, 25.0)
+delta_trigger=Root::TH1F.create("delta_trigger", "delta_trigger", lc_binNum[0], 0.0, 25.0)
 
 dateList.each do |date|
+  puts date
   month=date[0..5]
   resetHist(spec, lc0, lc1, delta_trigger)
   observationTimeTotal=0.0
@@ -172,17 +170,18 @@ dateList.each do |date|
   inputFileDir="#{input_dir}/#{detector}/#{month}/"
   `find #{inputFileDir} -name #{date}*.fits.gz | sort > #{fitsListName}`
 
-  File.open(fitsList, "r") do |list|
+  File.open(fitsListName, "r") do |list|
     list.each_line do |fitsAddress|
       fitsHeader=extractFitsNameHeader(fitsAddress)
       puts fitsAddress
       hist.Reset()
-      fillHist(fitsAddress, observationTimeTotal, adcChannel, hist, spec, lc0, lc1, delta_trrigger)
+      fillHist(fitsAddress, observationTimeTotal, adcChannel, hist, spec, lc0, lc1, delta_trigger)
       hist_output="#{outputFileDir}/#{fitsHeader}_ch#{adcChannel.to_s}_2d.root"
       Root::TFile.open(hist_output, "RECREATE") do |rootFile|
         hist.Write("hist")
       end
     end
   end
-  saveHistPic(observationTimeTotal, oututFileDir, date, spec, lc0, lc1, delta_trigger, c0)
+  saveHistPic(observationTimeTotal, adcChannel, outputFileDir, date, spec, lc0, lc1, delta_trigger, c0)
+  `rm #{fitsListName}`
 end
