@@ -13,7 +13,6 @@ def plotSetting(hist, xtitle, ytitle)
   hist.GetXaxis().SetTitle(xtitle)
   hist.GetYaxis().SetTitle(ytitle)
   hist.SetStats(0)
-  #hist.Sumw2()
 end
 
 def showUsage(argv)
@@ -28,6 +27,14 @@ def createOutputFolder(dir)
   if !File.exists?(dir) then
     puts "#{dir} does not exist. Create it."
     `mkdir -p #{dir}`
+  end
+  daughter=["lc_1sec", "lc_10sec", "hist_2d", "spec", "delta_trigger"]
+  daughter.each do |daughter|
+    daughter_dir="#{dir}/#{daughter}"
+    if !File.exists?(daughter_dir) then
+      puts "#{daughter_dir} does not exist. Create it."
+      `mkdir #{daughter_dir}`
+    end
   end
 end
 
@@ -80,7 +87,6 @@ def fillHist(fitsAddress, observationTimeTotal, adcChannel, hist, spec, lc0, lc1
   stopTimeTag=timeTag[eventNum].to_i
 
   observationTime=extractObsTime(startTimeTag, stopTimeTag)
-  puts observationTime
 
   if (observationTime<2000.0)&&(observationTime>0.0) then
     pastCount=-1.0
@@ -110,8 +116,9 @@ def fillHist(fitsAddress, observationTimeTotal, adcChannel, hist, spec, lc0, lc1
         end
       end
     end
-    observationTimeTotal+=(observationTime.to_i+1).to_f
+    observationTimeTotal+=observationTime
   end
+  return observationTimeTotal
 end
 
 
@@ -124,20 +131,31 @@ def saveHistPic(observationTimeTotal, adcChannel, outputFileDir, date, spec, lc0
   spec.Draw("h")
   c0.SetLogy(1)
   c0.Update()
-  c0.SaveAs("#{outputFileDir}/#{date}_ch#{adcChannel.to_s}_spec.png")
+  c0.SaveAs("#{outputFileDir}/spec/#{date}_ch#{adcChannel.to_s}_spec.png")
   lc0.Draw("h")
   c0.SetLogy(0)
   c0.Update()
-  c0.SaveAs("#{outputFileDir}/#{date}_ch#{adcChannel.to_s}_lc_1sec.png")
+  c0.SaveAs("#{outputFileDir}/lc_1sec/#{date}_ch#{adcChannel.to_s}_lc_1sec.png")
   lc1.Draw("h")
   c0.SetLogy(0)
   c0.Update()
-  c0.SaveAs("#{outputFileDir}/#{date}_ch#{adcChannel.to_s}_lc_10sec.png")
+  c0.SaveAs("#{outputFileDir}/lc_10sec/#{date}_ch#{adcChannel.to_s}_lc_10sec.png")
   delta_trigger.Draw("h")
   c0.Update()
-  c0.SaveAs("#{outputFileDir}/#{date}_ch#{adcChannel.to_s}_deltaTrigger.png")
+  c0.SaveAs("#{outputFileDir}/delta_trigger/#{date}_ch#{adcChannel.to_s}_deltaTrigger.png")
 end
-  
+
+def verify_fits(fitsAddress)
+  result=`fverify #{fitsAddress} prstat=no`
+  resultParse=result.split"\s"
+  if resultParse[1] == "OK" then
+    return true
+  else
+    puts "#{fitsAddress} is broken and excluded for analysis."
+    return false
+  end
+end
+
 input_dir=ARGV[0]  
 output_dir=ARGV[1]
 detector=ARGV[2]
@@ -174,11 +192,13 @@ dateList.each do |date|
     list.each_line do |fitsAddress|
       fitsHeader=extractFitsNameHeader(fitsAddress)
       puts fitsAddress
-      hist.Reset()
-      fillHist(fitsAddress, observationTimeTotal, adcChannel, hist, spec, lc0, lc1, delta_trigger)
-      hist_output="#{outputFileDir}/#{fitsHeader}_ch#{adcChannel.to_s}_2d.root"
-      Root::TFile.open(hist_output, "RECREATE") do |rootFile|
-        hist.Write("hist")
+      if verify_fits(fitsAddress) then
+        hist.Reset()
+        observationTimeTotal=fillHist(fitsAddress, observationTimeTotal, adcChannel, hist, spec, lc0, lc1, delta_trigger)
+        hist_output="#{outputFileDir}/hist_2d/#{fitsHeader}_ch#{adcChannel.to_s}_2d.root"
+        Root::TFile.open(hist_output, "RECREATE") do |rootFile|
+          hist.Write("hist")
+        end
       end
     end
   end
