@@ -184,7 +184,7 @@ dateList.each do |date|
   resetHist(spec, lc0, lc1, delta_trigger)
   observationTimeTotal=0.0
 
-  fitsListName="./fitsList_#{date}.txt"
+  fitsListName="./fitsList_#{detector}_#{date}.txt"
   inputFileDir="#{input_dir}/#{detector}/#{month}/"
   `find #{inputFileDir} -name #{date}*.fits.gz | sort > #{fitsListName}`
 
