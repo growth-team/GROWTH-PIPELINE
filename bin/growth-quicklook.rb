@@ -202,7 +202,7 @@ dateList.each do |date|
       puts fitsAddress
       if verify_fits(fitsAddress) then
         hist.Reset()
-        observationTimeTotal=fillHist(fitsAddress, observationTimeTotal, lowth, upth, adcChannel, hist, spec, lc0, lc1, delta_trigger)
+        observationTimeTotal=fillHist(fitsAddress, observationTimeTotal, lowth, uppth, adcChannel, hist, spec, lc0, lc1, delta_trigger)
         hist_output="#{outputFileDir}/hist_2d/#{fitsHeader}_ch#{adcChannel.to_s}_2d.root"
         Root::TFile.open(hist_output, "RECREATE") do |rootFile|
           hist.Write("hist")
