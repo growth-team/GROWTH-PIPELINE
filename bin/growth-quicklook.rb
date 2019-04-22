@@ -17,8 +17,8 @@ end
 
 def showUsage(argv)
   if argv==nil then
-    puts "Usage:   growth-quicklook.rb [input folder] [output folder] [detector name] [start date] [end date] [adc channel]"
-    puts "Example: growth-quicklook.rb ~/work/raw_data ~/work/growth/data/quick_look growth-fy2016s 20181001 20190320 0"
+    puts "Usage:   growth-quicklook.rb [input folder] [output folder] [detector name] [start date] [end date] [adc channel] [lower threshold] [upper threshold]"
+    puts "Example: growth-quicklook.rb ~/work/raw_data ~/work/growth/data/quick_look growth-fy2016s 20181001 20190320 0 2400 4000"
     exit -1
   end
 end
@@ -73,7 +73,7 @@ def extractObsTime(startTimeTag, stopTimeTag)
   end
 end
 
-def fillHist(fitsAddress, observationTimeTotal, adcChannel, hist, spec, lc0, lc1, delta_trigger)
+def fillHist(fitsAddress, observationTimeTotal, lowth, uppth, adcChannel, hist, spec, lc0, lc1, delta_trigger)
   fits=Fits::FitsFile.new(fitsAddress)
   eventHDU=fits["EVENTS"]
   timeTag=eventHDU["timeTag"]
@@ -100,8 +100,10 @@ def fillHist(fitsAddress, observationTimeTotal, adcChannel, hist, spec, lc0, lc1
         end
         hist.Fill(eventTime, phaMax[i].to_f)
         eventTimeHour=(observationTimeTotal+eventTime)/3600.0
-        lc0.Fill(eventTimeHour)
-        lc1.Fill(eventTimeHour)
+        if (phaMax[i].to_i>lowth)&&(phaMax[i].to_i<uppth) then
+          lc0.Fill(eventTimeHour)
+          lc1.Fill(eventTimeHour)
+        end
         if pastCount<0 then
           pastCount=triggerCount[i].to_i
         else
@@ -162,10 +164,16 @@ detector=ARGV[2]
 start_date=ARGV[3]
 end_date=ARGV[4]
 adcChannel=ARGV[5].to_i
+if ARGV[6].to_i<2050 then
+  lowth=2050
+else
+  lowth=ARGV[6].to_i
+end
+uppth=ARGV[7].to_i
 lc_width=[1.0, 10.0]
 lc_binNum=[25*3600/lc_width[0].to_i, 25*3600/lc_width[1].to_i]
 
-showUsage(ARGV[5])
+showUsage(ARGV[7])
 outputFileDir="#{output_dir}/#{detector}"
 createOutputFolder(outputFileDir)
 dateList=extractDateList(start_date, end_date)
@@ -194,7 +202,7 @@ dateList.each do |date|
       puts fitsAddress
       if verify_fits(fitsAddress) then
         hist.Reset()
-        observationTimeTotal=fillHist(fitsAddress, observationTimeTotal, adcChannel, hist, spec, lc0, lc1, delta_trigger)
+        observationTimeTotal=fillHist(fitsAddress, observationTimeTotal, lowth, upth, adcChannel, hist, spec, lc0, lc1, delta_trigger)
         hist_output="#{outputFileDir}/hist_2d/#{fitsHeader}_ch#{adcChannel.to_s}_2d.root"
         Root::TFile.open(hist_output, "RECREATE") do |rootFile|
           hist.Write("hist")
