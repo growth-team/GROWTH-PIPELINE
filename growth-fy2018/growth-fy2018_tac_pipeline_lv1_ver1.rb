@@ -7,22 +7,25 @@
 require "json"
 require "shellwords"
 require "RubyFits"
+require "RubyROOT"
 require "time"
 include Math
+include Root
+include RootApp
 include Fits
 STDOUT.sync=true
 
 puts ""
-puts "  #######################################"
-puts "  ##     GROWTH-TAC FITS CONVERTOR     ##"
-puts "  ##         April 18th, 2019          ##"
-puts "  ## Yuuki Wada  (University of Tokyo) ##"
-puts "  #######################################"
+puts "  ########################################"
+puts "  ##  GROWTH-TAC FITS CONVERTOR & QLER  ##"
+puts "  ##          April 18th, 2019          ##"
+puts "  ##  Yuuki Wada (University of Tokyo)  ##"
+puts "  ########################################"
 puts ""
 
 if (ARGV[4]==nil) then
-  puts "Usage: growth-tac_pipeline.rb <ID> <input folder> <output folder> <start date> <end date>"
-  puts "Example: growth-tac_pipeline.rb 1 ~/work/raw_data/TAC_1 ~/work/growth/data/processed 1 20181001 20190320"
+  puts "Usage: growth-tac_pipeline.rb <ID> <input folder> <output folder> <ql output folder> <start date> <end date> <lower threshold> <upper threshold>"
+  puts "Example: growth-tac_pipeline.rb 1 ~/work/raw_data/TAC_001 ~/work/growth/data/processed ~/work/ql 20181001 20190320"
   puts ""
   exit 1
 end
@@ -33,9 +36,19 @@ pipeline_version_short="ver1"
 detID=ARGV[0].to_i
 input_dir=ARGV[1]
 output_dir=ARGV[2]
-start_date=ARGV[3]
-end_date=ARGV[4]
+ql_dir=ARGV[3]
+start_date=ARGV[4]
+end_date=ARGV[5]
+if ARGV[6].to_i<20 then
+  lowth=20
+else
+  lowth=ARGV[6].to_i
+end
+uppth=ARGV[7].to_i
 date=Time.now.strftime("%Y%m%d_%H%M%S")
+
+lc_width=[1.0, 10.0]
+lc_binNum=[25*3600/lc_width[0].to_i, 25*3600/lc_width[1].to_i]
 
 energy_K=1460.8
 energy_Tl=2614.5
@@ -68,8 +81,12 @@ XTENSION=BINTABLE
 EXTNAME=EVENTS
 TFORM#=B
 TTYPE#=boardIndexAndChannel
+TFORM#=K
+TTYPE#=timeTag
 TFORM#=I
 TTYPE#=phaMax
+TFORM#=I
+TTYPE#=phaMin
 TFORM#=D
 TTYPE#=unixTime
 TFORM#=E
@@ -95,10 +112,70 @@ def extract_unixTime(date, hour, line)
   return unixTime
 end
 
+def extract_timeTag(line)
+  lineParse=line.split(",")
+  min=lineParse[0].to_f
+  sec=lineParse[1].to_f
+  precise=lineParse[2].to_f/10000.0
+
+  timeTag=((min*3600+sec+precise)*1.0e8).to_i
+  return timeTag
+end
+
 def extract_preciseTime(line)
   lineParse=line.split(",")
   precise=lineParse[2].to_f/10000.0
   return precise
+end
+
+def resetHist(h0, h1, h2)
+  h0.Reset()
+  h1.Reset()
+  h2.Reset()
+end
+
+def plotSetting(hist, xtitle, ytitle)
+  hist.SetTitle("")
+  hist.GetXaxis().SetTitle(xtitle)
+  hist.GetYaxis().SetTitle(ytitle)
+  hist.SetStats(0)
+end
+
+def saveHistPic(outputFileDir, date, spec, lc0, lc1, c0)
+  plotSetting(spec, "channel", "Count s^{-1} ch^{-1}")
+  plotSetting(lc0, "Hour", "Count s^{-1}")
+  plotSetting(lc1, "Hour", "Count s^{-1}")
+  lc1.Scale(0.1)
+  spec.Draw("h")
+  c0.SetLogy(1)
+  c0.Update()
+  c0.SaveAs("#{outputFileDir}/spec/#{date}_ch0_spec.png")
+  lc0.Draw("h")
+  c0.SetLogy(0)
+  c0.Update()
+  c0.SaveAs("#{outputFileDir}/lc_1sec/#{date}_ch0_lc_1sec.png")
+  lc1.Draw("h")
+  c0.SetLogy(0)
+  c0.Update()
+  c0.SaveAs("#{outputFileDir}/lc_10sec/#{date}_ch0_lc_10sec.png")
+end
+
+def fill_hist(hour, line, lowth, uppth, hist, spec, lc0, lc1)
+  lineParse=line.split(",")
+  min=lineParse[0].to_f
+  sec=lineParse[1].to_f
+  precise=lineParse[2].to_f/10000.0
+  phaMax=lineParse[3].to_f
+  
+  time=min*60.0+sec+precise
+  timeHour=hour.to_f+(min*60.0+sec+precise)/3600.0
+
+  spec.Fill(phaMax)
+  hist.Fill(time, phaMax)
+  if (phaMax>lowth)&&(phaMax<uppth) then
+    lc0.Fill(timeHour)
+    lc1.Fill(timeHour)
+  end
 end
 
 #============================================
@@ -107,15 +184,30 @@ end
 
 output_fits_dir="#{output_dir}/GROWTH-TAC#{sprintf("%03d", detID)}/fits_lv1"
 make_directory(output_fits_dir)
+ql_daughter=["lc_1sec", "lc_10sec", "hist_2d", "spec"]
+ql_daughter.each do |daughter|
+  output_ql_dir="#{ql_dir}/GROWTH-TAC#{sprintf("%03d", detID)}/#{daughter}"
+  make_directory(output_ql_dir)
+end
+
+c0=Root::TCanvas.create("c0", "canvas0", 640, 480)
+
+hist=Root::TH2F.create("hist", "hist", 3600, 0.0, 3600.0, 1024, -0.5, 1023.5)
+spec=Root::TH1F.create("spec", "spec", 1024, -0.5, 1023.5)
+lc0=Root::TH1F.create("lc0", "lc0", lc_binNum[0], 0.0, 25.0)
+lc1=Root::TH1F.create("lc1", "lc1", lc_binNum[1], 0.0, 25.0)
+
 dateList=extractDateList(start_date, end_date)
 dateList.each do |date|
   puts date
+  resetHist(spec, lc0, lc1)
   year=date[0..3]
   month=date[4..5]
   day=date[6..7]
   for hour in 0..23
     input_file="#{input_dir}/#{year}/#{month}/#{day}/#{sprintf("%03d", detID)}_#{date}_#{sprintf("%02d", hour)}.csv"
     output_file="#{output_fits_dir}/#{date}_#{sprintf("%02d", hour)}0000.fits"
+    hist.Reset()
 
     if File.exist?(input_file) then
       hdu=setupFits()
@@ -125,8 +217,11 @@ dateList.each do |date|
         csv_data=csv.readlines()
         eventHDU.resize(csv_data.length)
         csv_data.each.with_index do |line, i|
+          fill_hist(hour, line, lowth, uppth, hist, spec, lc0, lc1)
           eventHDU["boardIndexAndChannel"][i]=0
+          eventHDU["timeTag"][i]=extract_timeTag(line)
           eventHDU["phaMax"][i]=extract_phaMax(line)
+          eventHDU["phaMin"][i]=0
           eventHDU["unixTime"][i]=extract_unixTime(date, hour, line)
           eventHDU["preciseTime"][i]=extract_preciseTime(line)
         end
@@ -135,7 +230,12 @@ dateList.each do |date|
       fitsFileOutput.append primaryHDU
       fitsFileOutput.append eventHDU
       fitsFileOutput.saveAs(output_file)
-      `gzip #{output_File}`
+      `gzip --force #{output_file}`
+      hist_output="#{ql_dir}/GROWTH-TAC#{sprintf("%03d", detID)}/hist_2d/#{date}_#{sprintf("%02d", hour)}0000_ch0_2d.root"
+      Root::TFile.open(hist_output, "RECREATE") do |rootFile|
+        hist.Write("hist")
+      end
     end
   end
+  saveHistPic("#{ql_dir}/GROWTH-TAC#{sprintf("%03d", detID)}", date, spec, lc0, lc1, c0)
 end
