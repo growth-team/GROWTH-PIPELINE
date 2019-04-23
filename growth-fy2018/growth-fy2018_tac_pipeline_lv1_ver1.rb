@@ -23,9 +23,9 @@ puts "  ##  Yuuki Wada (University of Tokyo)  ##"
 puts "  ########################################"
 puts ""
 
-if (ARGV[4]==nil) then
-  puts "Usage: growth-tac_pipeline.rb <ID> <input folder> <output folder> <ql output folder> <start date> <end date> <lower threshold> <upper threshold>"
-  puts "Example: growth-tac_pipeline.rb 1 ~/work/raw_data/TAC_001 ~/work/growth/data/processed ~/work/ql 20181001 20190320"
+if (ARGV[8]==nil) then
+  puts "Usage: growth-tac_pipeline.rb <ID> <input folder> <output folder> <ql output folder> <start date> <end date> <academic year> <lower threshold> <upper threshold>"
+  puts "Example: growth-tac_pipeline.rb 1 ~/work/raw_data/TAC_001 ~/work/growth/data/processed ~/work/ql 20181001 20190320 2018 30 1024"
   puts ""
   exit 1
 end
@@ -39,13 +39,14 @@ output_dir=ARGV[2]
 ql_dir=ARGV[3]
 start_date=ARGV[4]
 end_date=ARGV[5]
-if ARGV[6].to_i<20 then
+academic_year=ARGV[6]
+if ARGV[7].to_i<20 then
   lowth=20
 else
-  lowth=ARGV[6].to_i
+  lowth=ARGV[7].to_i
 end
-uppth=ARGV[7].to_i
-date=Time.now.strftime("%Y%m%d_%H%M%S")
+uppth=ARGV[8].to_i
+process_date=Time.now.strftime("%Y%m%d_%H%M%S")
 
 lc_width=[1.0, 10.0]
 lc_binNum=[25*3600/lc_width[0].to_i, 25*3600/lc_width[1].to_i]
@@ -178,6 +179,19 @@ def fill_hist(hour, line, lowth, uppth, hist, spec, lc0, lc1)
   end
 end
 
+def caldb_address(id, academic_year)
+  caldb_origin=`echo $GROWTHCALDB`
+  caldb="#{caldb_origin.chomp!}/FY#{academic_year}_winter/growth-tac#{sprintf("%03d", id)}.json"
+  if File.exists?(caldb)==false then
+    puts "CALDB file in not found!"
+    puts "1. Do you execute in the correct directory?"
+    puts "2. Do you copy the CALDB files in your computer?"
+    puts "3. Is PATH of GROWTHCALDB correctly set up in your .bashrc?"
+    exit 1
+  end
+  return caldb
+end
+
 #============================================
 # Main
 #============================================
@@ -190,12 +204,36 @@ ql_daughter.each do |daughter|
   make_directory(output_ql_dir)
 end
 
+caldbFile=caldb_address(detID, academic_year)
+
+caldb_comment=Array.new
+caldb_comment[0]="detector ID"
+caldb_comment[1]="observation site"
+caldb_comment[2]="scintillator ID of Channel 0"
+caldb_comment[3]="scintillator ID of Channel 1"
+caldb_comment[4]="scintillator ID of Channel 2"
+caldb_comment[5]="scintillator ID of Channel 3"
+caldb_comment[6]="installation date"
+caldb_comment[7]="removal date"
+
 c0=Root::TCanvas.create("c0", "canvas0", 640, 480)
 
 hist=Root::TH2F.create("hist", "hist", 3600, 0.0, 3600.0, 1024, -0.5, 1023.5)
 spec=Root::TH1F.create("spec", "spec", 1024, -0.5, 1023.5)
 lc0=Root::TH1F.create("lc0", "lc0", lc_binNum[0], 0.0, 25.0)
 lc1=Root::TH1F.create("lc1", "lc1", lc_binNum[1], 0.0, 25.0)
+
+caldbInput=File.open(caldbFile)
+jsonLoad=JSON.load(caldbInput)
+
+caldb=jsonLoad["detectorInfo"]
+caldb_key=Array.new
+caldb_value=Array.new
+
+for i in 0..7
+  caldb_key[i]=(caldb[i].keys)
+  caldb_value[i]=(caldb[i].values)
+end
 
 dateList=extractDateList(start_date, end_date)
 dateList.each do |date|
@@ -213,6 +251,15 @@ dateList.each do |date|
       hdu=setupFits()
       primaryHDU=hdu[0]
       eventHDU=hdu[1]
+      eventHDU.addHeader("PIPELINE", "level-1", "present pipeline process level")
+      eventHDU.addHeader("PL1_DATE", "#{process_date}", "pipeline level-1 processing date")
+      eventHDU.addHeader("PL1_VER", "#{pipeline_version}", "pipeline level-1 version")
+      for i in 0..7
+        fits_key=caldb_key[i].join("")
+        fits_value=caldb_value[i].join("")
+        fits_comment=caldb_comment[i]
+        eventHDU.addHeader(fits_key, fits_value, fits_comment)
+      end
       File.open(input_file, "r") do |csv|
         csv_data=csv.readlines()
         eventHDU.resize(csv_data.length)
