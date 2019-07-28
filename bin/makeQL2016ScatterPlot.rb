@@ -33,8 +33,6 @@ for i in 0..(eventNum.to_i)
   if (channel==eventChannel) then
     if (timeTag<timeTagPast) then
       counterLoop+=1
-      #puts timeTagPast
-      #puts timeTag
     end
     timeTagPast=timeTag
   end
@@ -42,7 +40,6 @@ end
 
 observationTime=((timeTagEnd-timeTagStart+(2**40)*counterLoop)/fpgaClock).round(1)
 obsTimeString=observationTime.to_s+"sec observation"
-#puts counterLoop
 puts obsTimeString
 
 # Fill histogram
@@ -88,6 +85,7 @@ hist.GetYaxis().SetTitle("ADC")
 hist.GetYaxis().CenterTitle
 hist.GetYaxis().SetTitleOffset(1.35)
 hist.GetYaxis().SetRangeUser(0, 4096)
+hist.SetStats(0)
 hist.Draw("")
 histMax=Root::TGraphErrors.create(time,phaMaxArray)
 histMin=Root::TGraphErrors.create(time,phaMinArray)

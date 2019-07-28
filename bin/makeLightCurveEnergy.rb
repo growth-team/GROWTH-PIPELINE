@@ -57,23 +57,9 @@ hist.GetYaxis.SetTitle("Count Rate (count/sec)")
 hist.GetYaxis.CenterTitle
 hist.GetYaxis.SetTitleOffset(1.35)
 hist.SetStats(0)
-gStyle.SetTimeOffset(-788918400)
-gStyle.SetNdivisions(505)
 hist.GetXaxis().SetTimeDisplay(1)
-#hist.GetXaxis().SetTimeFormat("%m/%d %H:%M")
 hist.GetXaxis().SetTimeFormat("%H:%M:%S")
 
-hist.Draw("e1")
+hist.Draw("e")
 c0.Update()
 run_app()
-
-#hist.GetYaxis.SetRangeUser(0, 70)
-#
-#output=File.open("longLightCurveLaw.dat", "w+")
-#i=0
-#countSec.each do
-#  line=time[i].to_s+"\t"+errorTime[i].to_s+"\t"+countSec[i].to_s+"\t"+errorCountSec[i].to_s+"\n"
-#  output.write(line)
-#  i+=1
-#end
-

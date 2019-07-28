@@ -34,66 +34,49 @@ for i in 0..(eventNum.to_i)
   if (channel==eventChannel) then
     if (timeTag<timeTagPast) then
       counterLoop+=1
-      #puts timeTagPast
-      #puts timeTag
     end
     timeTagPast=timeTag
   end
 end
 
 observationTime=((timeTagEnd-timeTagStart+(2**40)*counterLoop)/fpgaClock).round(1)
-obsTimeString=observationTime.to_s+"sec observation"
-#puts counterLoop
-puts obsTimeString
+puts "#{observationTime} sec observation"
 
 # Fill histogram
 binNum=(observationTime/binWidth).to_i+1
-rawCount=Array.new(binNum, 0)
-count=Array.new
-errorCount=Array.new
-time=Array.new
-errorTime=Array.new
+binStart=0.0
+binEnd=binWidth*binNum.to_f/60.0
+hist=Root::TH1F.create("h0", "h0", binNum, binStart, binEnd)
+
 timeTagPast=timeTagStart
 counterLoop=0
+
 for i in 0..eventNum
   timeTag=eventHDU["timeTag"][i].to_i
   phaMax=eventHDU["phaMax"][i].to_i
   if channel==eventHDU["boardIndexAndChannel"][i].to_i
     if (timeTag>=timeTagPast)&&(phaMax>=phaLimitsLow)&&(phaMax<phaLimitsUp) then
       second=(timeTag-timeTagStart+(2**40)*counterLoop).to_f/fpgaClock.to_f
-      binNo=(second/binWidth).to_i
-      #puts timeTagPast
-      #puts timeTag
-      rawCount[binNo]+=1
+      hist.Fill(second/60.0)
       timeTagPast=timeTag
     elsif (timeTag<timeTagPast)&&(phaMax>=phaLimitsLow)&&(phaMax<phaLimitsUp) then
       counterLoop+=1
       second=(timeTag-timeTagStart+(2**40)*counterLoop).to_f/fpgaClock.to_f
-      binNo=(second/binWidth).to_i
-      rawCount[binNo]+=1
+      hist.Fill(second/60.0)
       timeTagPast=timeTag
     end
   end
 end
-for i in 0..(binNum.to_i-1)
-  count[i]=rawCount[i]/binWidth
-  errorCount[i]=(rawCount[i]**0.5)/binWidth
-  time[i]=((i+0.5)*binWidth)/60.0
-  errorTime[i]=0.5*binWidth/60.0
-end
-hist=Root::TGraphErrors.create(time,count,errorTime,errorCount)
-hist.SetName "g0"
 c0=Root::TCanvas.create("c0", "canvas0", 640, 480)
+hist.Scale(1.0/binWidth)
 hist.SetTitle("Count Rate")
-hist.GetXaxis.SetTitle("Time (Minites)")
-hist.GetXaxis.SetTitleOffset(1.2)
-hist.GetXaxis.CenterTitle
-hist.GetYaxis.SetTitle("Count Rate (count/sec)")
-hist.GetYaxis.CenterTitle
-hist.GetYaxis.SetTitleOffset(1.35)
-#hist.GetXaxis.SetRangeUser(0, 1800)
-hist.SetMarkerStyle(1)
-hist.SetMarkerSize(5)
-hist.Draw("ap")
-c0.Update
+hist.GetXaxis().SetTitle("Time (Second)")
+hist.GetXaxis().SetTitleOffset(1.2)
+hist.GetXaxis().CenterTitle()
+hist.GetYaxis().SetTitle("Count Rate (count/sec)")
+hist.GetYaxis().CenterTitle()
+hist.GetYaxis().SetTitleOffset(1.35)
+hist.SetStats(0)
+hist.Draw("e")
+c0.Update()
 run_app

@@ -7,13 +7,14 @@ include Root
 include RootApp
 
 if (ARGV[2]==nil) then
-  puts "Usage: ruby makeSpectrum.rb <input file> <channel> <rebin>"
+  puts "Usage: ruby makeSpectrum.rb <input file> <channel> <rebin> <mode 0 or 1>"
   exit 1
 end
   
 fitsFile=ARGV[0]
 adcChannel=ARGV[1].to_i
 rebin=ARGV[2].to_i
+mode=ARGV[3].to_i
 fits=Fits::FitsFile.new(fitsFile)
 eventHDU=fits["EVENTS"]
 adcIndex=eventHDU["boardIndexAndChannel"]
@@ -34,8 +35,11 @@ hist=Root::TH1F.create("hist", "hist", binNum, -0.5, 4095.5)
 
 for i in 0..eventNum
   if adcIndex[i].to_i==adcChannel then
-    hist.Fill(eventHDU["phaMax"][i].to_f-eventHDU["phaMin"][i].to_f)
-    #hist.Fill(eventHDU["phaMax"][i].to_f)
+    if mode==0 then
+      hist.Fill(eventHDU["phaMax"][i].to_f)
+    else
+      hist.Fill(eventHDU["phaMax"][i].to_f-eventHDU["phaMin"][i].to_f)
+    end
   end
 end
 
@@ -48,13 +52,15 @@ hist.GetXaxis().CenterTitle()
 hist.GetYaxis().SetTitle("Count/s/ch")
 hist.GetYaxis().CenterTitle()
 hist.GetYaxis().SetTitleOffset(1.35)
-#hist.GetYaxis.SetRangeUser(0.5, 100000)
-#hist.GetXaxis().SetRangeUser(2048, 4096)
-hist.GetXaxis().SetRangeUser(-0.5, 2048.5)
+if mode==0 then
+  hist.GetXaxis().SetRangeUser(2047.5, 4095.5)
+else
+  hist.GetXaxis().SetRangeUser(-0.5, 2048.5)
+end
 hist.SetStats(0)
 hist.Sumw2()
 hist.Scale(scaleFactor)
-hist.Draw("e1")
+hist.Draw("e")
 c0.SetLogy()
-c0.Update
+c0.Update()
 run_app()

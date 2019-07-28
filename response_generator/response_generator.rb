@@ -6,7 +6,7 @@ include RootApp
 include Fits
 include Math
 
-# usage: ruby response_generator.rb [input root file] [output fits file] [event tree name] [area density] [simulation energy binning file name]
+# usage: ruby response_generator.rb [input root file] [output fits file] [detector name] [event tree name] [area density] [simulation energy binning file name]
 #                                   [resolution sigma factor 1] [resolution sigma factor 2] [resolution sigma factor 3]
 # sigma (MeV) = [factor1] * (E MeV)**[factor2] + [factor3]
 
@@ -30,7 +30,7 @@ def addFitsHeader(hdu, det)
 end
 
 if ARGV[7]==nil then
-  puts "usage: ruby response_generator.rb [input root file] [output fits file] [event tree name] [area density] [simulation energy binning file name]"
+  puts "usage: ruby response_generator.rb [input root file] [output fits file] [detector name] [event tree name] [area density] [simulation energy binning file name]"
   puts "                                  [resolution sigma factor 1] [resolution sigma factor 2] [resolution sigma factor 3]"
   puts "sigma (MeV) = [factor1] * (E MeV)**[factor2] + [factor3]"
   exit
