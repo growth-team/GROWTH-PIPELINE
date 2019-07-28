@@ -7,7 +7,7 @@ include Root
 include RootApp
 
 if (ARGV[2]==nil) then
-  puts "Usage: ruby makeSpectrum.rb <input file> <channel> <rebin> <mode>"
+  puts "Usage: ruby makeSpectrum.rb <input file> <channel> <rebin> <mode 0 or 1>"
   exit 1
 end
   
