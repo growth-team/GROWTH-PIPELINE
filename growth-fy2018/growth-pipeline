@@ -42,8 +42,6 @@ end
 def quick_look()
   det_info=parse_name()
   det_index=det_info[2]
-  #result=`growth-fy2017_pipeline_lv0_quickLook_ver1.rb #{det_index}`
-  #puts result
   IO.popen("growth-fy2018_pipeline_lv0_quickLook_ver1.rb #{det_index}") do |execute|
     execute.each do |line|
       print line
@@ -76,8 +74,6 @@ end
 def process_lv1(det_info)
   caldb=caldb_address(det_info)
   index=det_info[2]
-  #result=`growth-fy2017_pipeline_lv1_ver1.rb #{index.chomp!} #{caldb}`
-  #puts result
   IO.popen("growth-fy2018_pipeline_lv1_ver1.rb #{index.chomp!} #{caldb}") do |execute|
     execute.each do |line|
       print line
@@ -107,9 +103,7 @@ def process_calibration(det_info, cal_info)
       crystal=cal_info["ch#{i.to_s}"][3]
       resolution=dicide_resolution(crystal)
       rebin=2
-      #result=`growth-fy2017_pipeline_lv2_peakTrackCalibration_ver1.rb #{det_index} #{i.to_s} #{mean.to_s} #{energy.to_s} #{resolution.to_s} #{rebin.to_s}`
-      #puts result
-      IO.popen("growth-fy2018_pipeline_lv2_peakTrackCalibration_ver1.rb #{det_index} #{i.to_s} #{mean.to_s} #{energy.to_s} #{resolution.to_s} #{rebin.to_s}") do |execute|
+      IO.popen("growth-fy2018_pipeline_lv2_peakTrackCalibration_ver1.rb #{det_index} #{i} #{mean} #{energy} #{resolution} #{rebin}") do |execute|
         execute.each do |line|
           print line
         end
@@ -118,8 +112,6 @@ def process_calibration(det_info, cal_info)
     elsif cal_type=="const"
       mean=cal_info["ch#{i.to_s}"][1]
       energy=cal_info["ch#{i.to_s}"][2]
-      #result=`growth-fy2017_pipeline_lv2_peakFileGenerator_ver1.rb #{det_index} #{i.to_s} #{mean.to_s} #{energy.to_s}`
-      #puts result
       IO.popen("growth-fy2018_pipeline_lv2_peakFileGenerator_ver1.rb #{det_index} #{i.to_s} #{mean.to_s} #{energy.to_s}") do |execute|
         execute.each do |line|
           print line
@@ -135,8 +127,6 @@ end
 
 def process_lv2(det_info, cal_switch)
   det_index=det_info[2]
-  #result=`growth-fy2017_pipeline_lv2_ver1.rb #{det_index} #{cal_switch[0]} #{cal_switch[1]} #{cal_switch[2]} #{cal_switch[3]}`
-  #puts result
   IO.popen("growth-fy2018_pipeline_lv2_ver1.rb #{det_index} #{cal_switch[0]} #{cal_switch[1]} #{cal_switch[2]} #{cal_switch[3]}") do |execute|
     execute.each do |line|
       print line
