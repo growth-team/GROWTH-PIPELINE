@@ -124,8 +124,8 @@ usage(ARGV)
 energy=[1460.8, 2614.5] 
 fitLoopNum=5
 fitRangeConst=Array.new
-fitRangeConst[0]=[1.0, 1.2]
-fitRangeConst[1]=[1.0, 1.4] 
+fitRangeConst[0]=[0.8, 1.4]
+fitRangeConst[1]=[0.8, 1.4] 
 
 fitsHead=ARGV[0]
 channel=ARGV[1].to_i
