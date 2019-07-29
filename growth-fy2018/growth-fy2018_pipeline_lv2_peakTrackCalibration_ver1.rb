@@ -169,23 +169,25 @@ File.open(outputFile, "w") do |output|
         eventNum=eventHDU.getNRows()
         
         observationTime=calc_observartion_time(eventHDU, eventNum)
-        unixTime[index]=timeHDU["unixTime"][0].to_f+observationTime/2.0
-        errorUnixTime[index]=observationTime/2.0
+        if (observationTime>1200.0)&&(observationTime<2400.0) then
+          unixTime[index]=timeHDU["unixTime"][0].to_f+observationTime/2.0
+          errorUnixTime[index]=observationTime/2.0
         
-        hist.Reset()
-        fill_hist(hist, eventHDU, eventNum, channel)
-        hist.Draw()
-        c0.Update()
-        puts fitsName
-        
-        gausPrecise=Array.new
-        for i in 0..1
-          fit_gaussian(hist, preFit[i], fitRangeConst[i], fitLoopNum, norm[i], mean[i], sigma[i], errorMean[i], index, c0)
+          hist.Reset()
+          fill_hist(hist, eventHDU, eventNum, channel)
+          hist.Draw()
           c0.Update()
-          sleep(0.2)
+          puts fitsName
+          
+          gausPrecise=Array.new
+          for i in 0..1
+            fit_gaussian(hist, preFit[i], fitRangeConst[i], fitLoopNum, norm[i], mean[i], sigma[i], errorMean[i], index, c0)
+            c0.Update()
+            sleep(0.2)
+          end
+          string="#{fitsName}\t#{unixTime[index]}\t#{errorUnixTime[index]}\t#{mean[0][index]}\t#{errorMean[0][index]}\t#{mean[1][index]}\t#{errorMean[1][index]}"
+          output.puts(string)
         end
-        string="#{fitsName}\t#{unixTime[index]}\t#{errorUnixTime[index]}\t#{mean[0][index]}\t#{errorMean[0][index]}\t#{mean[1][index]}\t#{errorMean[1][index]}"
-        output.puts(string)
       end
     end
   end
