@@ -182,6 +182,7 @@ File.open(outputFile, "w") do |output|
         for i in 0..1
           fit_gaussian(hist, preFit[i], fitRangeConst[i], fitLoopNum, norm[i], mean[i], sigma[i], errorMean[i], index, c0)
           c0.Update()
+          sleep(0.2)
         end
         string="#{fitsName}\t#{unixTime[index]}\t#{errorUnixTime[index]}\t#{mean[0][index]}\t#{errorMean[0][index]}\t#{mean[1][index]}\t#{errorMean[1][index]}"
         output.puts(string)
