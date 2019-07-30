@@ -23,7 +23,7 @@ def remove_old_file(file)
 end
 
 def set_pre_fit_parameters(energy, peakChan, peakEnergy, resolution)
-  preFit=Array.new(2){Array.new}
+  preFit=Arrayç.new(2){Array.new}
   for i in 0..1
     preFit[i][1]=peakChan*energy[i]/(1.0e3*peakEnergy)
     preFit[i][2]=preFit[i][1]*resolution/2.35
@@ -58,7 +58,7 @@ def fill_hist(hist, eventHDU, eventNum, channel)
   end
 end
 
-def fit_gaussian(hist, preFit, fitRangeConst, fitLoopNum, norm, mean, sigma, errorMean, fitsIndex, c0)
+def fit_gaussian(hist, preFit, fitRangeConst, hardLimit, fitLoopNum, norm, mean, sigma, errorMean, fitsIndex, c0)
   fitRange=set_fit_range(fitRangeConst, preFit)
   fitParameter=Array.new
   hist.Draw()
@@ -89,10 +89,13 @@ def fit_gaussian(hist, preFit, fitRangeConst, fitLoopNum, norm, mean, sigma, err
   end
 
   meanPrecise=gausPrecise.GetParameter(1)
-  if (meanPrecise>=fitRangePrecise[0])&&(meanPrecise<=fitRangePrecise[1]) then
+  if (meanPrecise>=hardLimit[0])&&(meanPrecise<=hardLimit[1]) then
     for i in 0..2
       preFit[i]=gausPrecise.GetParameter(i)
     end
+  else
+    preFit[1]=(hardLimit[0]+hardLimit[1])/2.0
+    preFit[2]=preFit[1]*0.15/2.35
   end
   
   norm[fitsIndex]=gausPrecise.GetParameter(0)
@@ -117,6 +120,14 @@ def set_gain_graph(unixTime, errorUnixTime, mean, errorMean)
   return gain
 end
 
+def set_hard_limit(preFit, hardLimitRes)
+  hardLimit=Array.new
+  for i in 0..1
+    hardLimit[i]=[preFit[i][1]*(1.0-hardLimitRes), preFit[i][1]*(1.0+hardLimitRes)]
+  end
+  return hardLimit
+end
+  
 # main
 usage(ARGV)
 
@@ -126,6 +137,7 @@ fitLoopNum=5
 fitRangeConst=Array.new
 fitRangeConst[0]=[0.6, 1.4]
 fitRangeConst[1]=[0.6, 1.4] 
+hardLimitRes=0.15
 
 fitsHead=ARGV[0]
 channel=ARGV[1].to_i
@@ -150,6 +162,7 @@ errorUnixTime=Array.new
 meanGraph=Array.new(2){Array.new}
 
 preFit=set_pre_fit_parameters(energy, peakChan, peakEnergy, resolution)
+hardLimit=set_hard_limit(preFit, hardLimitRes)
 
 binNum=4096/rebin
 hist=Root::TH1F.create("h0", "h0", binNum, -0.5, 4095.5)
@@ -181,7 +194,7 @@ File.open(outputFile, "w") do |output|
           
           gausPrecise=Array.new
           for i in 0..1
-            fit_gaussian(hist, preFit[i], fitRangeConst[i], fitLoopNum, norm[i], mean[i], sigma[i], errorMean[i], index, c0)
+            fit_gaussian(hist, preFit[i], fitRangeConst[i], hardLimit[i], fitLoopNum, norm[i], mean[i], sigma[i], errorMean[i], index, c0)
             c0.Update()
             sleep(0.2)
           end
