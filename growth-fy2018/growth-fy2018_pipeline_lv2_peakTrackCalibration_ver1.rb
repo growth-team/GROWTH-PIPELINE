@@ -23,7 +23,7 @@ def remove_old_file(file)
 end
 
 def set_pre_fit_parameters(energy, peakChan, peakEnergy, resolution)
-  preFit=Arrayç.new(2){Array.new}
+  preFit=Array.new(2){Array.new}
   for i in 0..1
     preFit[i][1]=peakChan*energy[i]/(1.0e3*peakEnergy)
     preFit[i][2]=preFit[i][1]*resolution/2.35
